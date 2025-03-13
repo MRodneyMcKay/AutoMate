@@ -74,3 +74,48 @@ function Get-Shift {
         return $null
     }
 }
+
+function Get-ShiftManager
+{
+    param (
+        [datetime]$now = $(Get-Date)
+    )
+    $today = Get-Date $now
+    $monthName = (Get-Culture).TextInfo.ToTitleCase((Get-Culture).DateTimeFormat.GetMonthName($today.Month))
+    $pattern = '^(' + [regex]::escape($today.Year) +').*(' + [regex]::escape($monthName) + '|' + (Get-Culture).DateTimeFormat.GetMonthName($today.Month) +')(?!.*(azd|ront|beosztás|havi)).*xlsx$'
+    $items = Get-ChildItem $([System.Environment]::GetFolderPath("Desktop")) | Where-Object { $_.Name.Normalize() -match ($pattern) } | Sort-Object Name -Descending | Select-Object -First 1
+    $filePath=$items.FullName
+    $ExcelBack = New-Object -ComObject Excel.Application
+    $ExcelBack.visible=$false
+    $Workbook = $ExcelBack.Workbooks.Open($filePath)
+    $workSheet = $Workbook.Sheets.Item(1)
+    $roster = @()
+    $roster += Get-Name $worksheet '1~*' $today
+    $roster += Get-Name $worksheet '*2~*' $today
+    $Workbook.close($false)
+    [void][System.Runtime.InteropServices.Marshal]::ReleaseComObject([System.__ComObject]$ExcelBack)
+    [gc]::Collect()
+    [gc]::WaitForPendingFinalizers()
+    Remove-Variable ExcelBack -ErrorAction SilentlyContinue
+    return $roster
+}
+
+function Get-Name {
+    param (
+        [object]$worksheet,
+        [string]$ShiftID,
+        [datetime]$date
+    )
+    $header = $workSheet.Cells.Find("műszakvezető")
+    $ColumnOffset = $workSheet.Rows($header.Cells.Row() - 1).Find("sz").Cells.Column()
+    $found = $workSheet.Range($workSheet.Cells($header.Cells.Row(), $($ColumnOffset + $date.Day)).Address(), $workSheet.Cells($( -1 + $header.Cells.Row() + $header.MergeArea.Rows.Count()), $($ColumnOffset + $date.Day)).Address()).Find($ShiftID, [Type]::Missing, [int][Microsoft.Office.Interop.Excel.XlFindLookIn]::xlValues, [int][Microsoft.Office.Interop.Excel.XlLookAt]::xlWhole)
+    if ($found) {
+        return [PSCustomObject]@{
+            Name  = $($workSheet.Cells($found.Row(), $header.Cells.Column + 1).Value2)
+            Shift = $($workSheet.Cells($found.Row(), $header.Cells.Column + $date.Day).Text)
+        }
+    } else {
+        Write-Error "$ShiftID not found in the worksheet."
+        return $null
+    }
+}
