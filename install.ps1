@@ -20,3 +20,28 @@ $action = New-ScheduledTaskAction -Execute "C:\Program Files\PowerShell\7\pwsh.e
 
 # Register the scheduled task without a trigger
 Register-ScheduledTask -TaskName "ToggleTheme" -Principal $principal -Action $action -Description "Runs the ToggleTheme script manually or when triggered by other means."
+
+# Define the path to your PowerShell script
+$scriptPath = "$PSScriptRoot\Printing\MonthlyTIGprint.ps1"
+
+# Create a trigger to execute the task at login
+
+$trigger1 = New-ScheduledTaskTrigger -Once -At (Get-Date "2025-03-31 15:30:00")
+$trigger2 = New-ScheduledTaskTrigger -Once -At (Get-Date "2025-04-30 15:30:00")
+$trigger3 = New-ScheduledTaskTrigger -Once -At (Get-Date "2025-05-31 15:30:00")
+$trigger4 = New-ScheduledTaskTrigger -Once -At (Get-Date "2025-06-30 15:30:00")
+$trigger5 = New-ScheduledTaskTrigger -Once -At (Get-Date "2025-08-31 15:30:00")
+$trigger6 = New-ScheduledTaskTrigger -Once -At (Get-Date "2025-09-30 15:30:00")
+$trigger7 = New-ScheduledTaskTrigger -Once -At (Get-Date "2025-10-31 15:30:00")
+$trigger8 = New-ScheduledTaskTrigger -Once -At (Get-Date "2025-11-30 15:30:00")
+
+# Combine all the triggers
+$triggers = @($trigger1, $trigger2, $trigger3, $trigger4, $trigger5, $trigger6, $trigger7, $trigger8)
+
+# Define the action to run the PowerShell script
+$action = New-ScheduledTaskAction -Execute "C:\Program Files\PowerShell\7\pwsh.exe" -Argument "-WindowStyle hidden -ExecutionPolicy Bypass -File `"$scriptPath`""
+# Define a principal that runs the task with highest privileges
+$principal = New-ScheduledTaskPrincipal -UserId "HIROSSPORT" -LogonType ServiceAccount -RunLevel Highest
+
+# Register the scheduled task
+Register-ScheduledTask -TaskName "Monthly print TIG" -Trigger $triggers -Principal $principal -Action $action -Description "Runs the Monthly TIG print script"
