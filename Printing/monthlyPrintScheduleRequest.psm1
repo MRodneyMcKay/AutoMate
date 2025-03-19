@@ -1,3 +1,5 @@
+Add-Type -Path "C:\Windows\assembly\GAC_MSIL\Microsoft.Office.Interop.Word\15.0.0.0__71e9bce111e9429c\Microsoft.Office.Interop.Word.dll"
+
 # Function to configure the printer
 function Configure-Printer {
     param (
@@ -91,10 +93,18 @@ function Print-Igeny {
 }
 
 # Define the file path
-$FilePath = "C:\Users\Hirossport\Hiros Sport Nonprofit Kft\Hiros-sport - Dokumentumok\Furdo\Recepcio\Nyomtatni\Jelenlétik, igények\Igények.docx"
 
-# Print for Uszomester
-Print-Igeny -FilePath $FilePath -StartMultiplier 1 -EndMultiplier 2
 
-# Print for Front Office
-Print-Igeny -FilePath $FilePath -StartMultiplier 3 -EndMultiplier 4
+function Print-RequestUszomester {
+    param (
+        [string]$FilePath = "C:\Users\Hirossport\Hiros Sport Nonprofit Kft\Hiros-sport - Dokumentumok\Furdo\Recepcio\Nyomtatni\Jelenlétik, igények\Igények.docx"
+    )
+    Print-Igeny -FilePath $FilePath -StartMultiplier 1 -EndMultiplier 2
+}
+
+function Print-RequestFrontOffice {
+    param (
+        [string]$FilePath = "C:\Users\Hirossport\Hiros Sport Nonprofit Kft\Hiros-sport - Dokumentumok\Furdo\Recepcio\Nyomtatni\Jelenlétik, igények\Igények.docx"
+    )
+    Print-Igeny -FilePath $FilePath -StartMultiplier 3 -EndMultiplier 4
+}

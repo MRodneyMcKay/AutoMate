@@ -111,6 +111,7 @@ function Cleanup-WordObjects {
     [System.Runtime.Interopservices.Marshal]::ReleaseComObject($Word) | Out-Null
 }
 
+function Print-CommutingAllowance {
 # Main script logic
 $bejaroPath = "C:\Users\Hirossport\Hiros Sport Nonprofit Kft\Hiros-sport - Dokumentumok\Furdo\Recepcio\Nyomtatni\Útiköltség nyomtatvány_2025.docx"
 $bejarodataSourcePath = "C:\Users\Hirossport\Hiros Sport Nonprofit Kft\Hiros-sport - Dokumentumok\Furdo\Recepcio\Nyomtatni\Útiköltség nyomtatvány.xlsx"
@@ -134,3 +135,5 @@ Print-Document -Document $mergedDocument -PrinterName $defaultPrinter -PageRange
 
 # Clean up
 Cleanup-WordObjects -Word $wordApp -MergedDocument $mergedDocument -OriginalDocument $originalDocument
+}
+
