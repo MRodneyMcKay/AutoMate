@@ -1,8 +1,9 @@
 Import-Module $PSScriptRoot\RosterInformation.psm1
 
-$roster = Get-ShiftManager
+function Create-Ticket {
+    
+$shiftManager = (Get-ShiftManager)[(Get-Date).TimeOfDay -lt (New-TimeSpan -Hours 12 -Minutes 55) ? 0 : 1].Name
 
-$shiftManager = $roster[ $(Get-Date) -lt $(Get-Date -Hour 12 -Minute 55) ? 0 : 1 ].Name
 
 $today = Get-Date
 $Excel = New-Object -ComObject Excel.Application
@@ -18,3 +19,4 @@ $workSheet = $Workbook.Sheets.Item("Munka1")
 $workSheet.Range("A6").value()= Get-Date $today -Format "yyyy.MM.dd. HH:mm"
 $workSheet.Range("A23").value()= $shiftManager
 $Excel.visible=$true
+}
