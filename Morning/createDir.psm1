@@ -1,6 +1,6 @@
 function create-Directories {
     param (
-        [datetime]$Today
+        [datetime]$Today = (Get-Date)
     )
     if ($Today.DayOfWeek.value__ -eq 0)
     {
