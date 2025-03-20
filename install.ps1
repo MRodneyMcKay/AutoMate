@@ -1,4 +1,4 @@
-# Define the path to your PowerShell script
+<# Define the path to your PowerShell script
 $scriptPath = "$PSScriptRoot\Theming\themeChangeManager.ps1"
 
 # Create a trigger to execute the task at login
@@ -56,3 +56,25 @@ $trigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Friday -At 3:00PM -EndBo
 
 # Register the scheduled task without a trigger
 Register-ScheduledTask -TaskName "PrintWeeklyUNP"  -Trigger $trigger -Principal $principal -Action $action -Description "Runs the printweeklyUNP script, which saves and prints shhets for UNP."
+#>$principal = New-ScheduledTaskPrincipal -UserId "HIROSSPORT" -LogonType ServiceAccount -RunLevel Highest
+
+# Define the path to your PowerShell script
+$scriptPath = "$PSScriptRoot\Morning\morningscript.ps1"
+
+# Create a trigger to execute the task at login
+$trigger = New-ScheduledTaskTrigger -AtLogOn
+
+# Define the action to run the PowerShell script
+$action = New-ScheduledTaskAction -Execute "C:\Program Files\PowerShell\7\pwsh.exe" -Argument "-WindowStyle hidden -ExecutionPolicy Bypass -File `"$scriptPath`""
+
+# Register the scheduled task
+Register-ScheduledTask -TaskName "Morning routine" -Trigger $trigger -Principal $principal -Action $action -Description "Runs the TMorning routine."
+
+# Define the registry path
+$registryPath = "HKCU:\Software\Script1"
+
+# Create the registry key
+New-Item -Path $registryPath -Force
+Set-ItemProperty -Path $registryPath -Name EmailLastShown -value 0
+Set-ItemProperty -Path $registryPath -Name LastRun -value 0
+Set-ItemProperty -Path $registryPath -Name YesterdaysWorkingHours -value 0
