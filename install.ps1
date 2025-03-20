@@ -56,3 +56,22 @@ $trigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Friday -At 3:00PM -EndBo
 
 # Register the scheduled task without a trigger
 Register-ScheduledTask -TaskName "PrintWeeklyUNP"  -Trigger $trigger -Principal $principal -Action $action -Description "Runs the printweeklyUNP script, which saves and prints shhets for UNP."
+
+# Define the content of the new script
+$modulePathTicket = Join-Path -Path $PSScriptRoot -ChildPath "maintenanceTicket.psm1"
+$modulePathRoster = Join-Path -Path $PSScriptRoot -ChildPath "RosterInformation.psm1"
+$newScriptContent = @"
+Import-Module "$($modulePathTicket)"
+Import-Module "$($modulePathRoster)"
+
+Create-Ticket
+"@
+
+# Get the Desktop path
+$desktopPath = [Environment]::GetFolderPath("Desktop")
+
+# Define the file name and path for the new script
+$newScriptPath = Join-Path -Path $desktopPath -ChildPath "Hibajegy.ps1"
+
+# Create the script file and write the content to it
+Set-Content -Path $newScriptPath -Value $newScriptContent
