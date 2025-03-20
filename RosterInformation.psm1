@@ -116,6 +116,9 @@ function Get-Name {
         }
     } else {
         Write-Error "$ShiftID not found in the worksheet."
-        return $null
+        return [PSCustomObject]@{
+            Name  = $null
+            Shift = $ShiftID
+        }
     }
 }

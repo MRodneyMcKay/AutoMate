@@ -75,3 +75,19 @@ $newScriptPath = Join-Path -Path $desktopPath -ChildPath "Hibajegy.ps1"
 
 # Create the script file and write the content to it
 Set-Content -Path $newScriptPath -Value $newScriptContent
+
+# Define the path to your PowerShell script
+$scriptPath = "$PSScriptRoot\popUpShiftManager.ps1"
+
+# Define the action to run the PowerShell script
+$action = New-ScheduledTaskAction -Execute "C:\Program Files\PowerShell\7\pwsh.exe" -Argument "-WindowStyle hidden -ExecutionPolicy Bypass -File `"$scriptPath`""
+
+$trigger1 = New-ScheduledTaskTrigger -AtLogOn
+$trigger2 = New-ScheduledTaskTrigger -Daily -At 12:58
+$trigger3 = New-ScheduledTaskTrigger -Daily -At 13:00
+# Combine all the triggers
+$triggers = @($trigger1, $trigger2, $trigger3)
+
+
+# Register the scheduled task without a trigger
+Register-ScheduledTask -TaskName "PopUpMuszi" -Trigger $triggers -Principal $principal -Action $action -Description "Runs the ToggleTheme script manually or when triggered by other means."
