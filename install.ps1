@@ -1,4 +1,4 @@
-<# Define the path to your PowerShell script
+# Define the path to your PowerShell script
 $scriptPath = "$PSScriptRoot\Theming\themeChangeManager.ps1"
 
 # Create a trigger to execute the task at login
@@ -56,13 +56,34 @@ $trigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Friday -At 3:00PM -EndBo
 
 # Register the scheduled task without a trigger
 Register-ScheduledTask -TaskName "PrintWeeklyUNP"  -Trigger $trigger -Principal $principal -Action $action -Description "Runs the printweeklyUNP script, which saves and prints shhets for UNP."
-#>$principal = New-ScheduledTaskPrincipal -UserId "HIROSSPORT" -LogonType ServiceAccount -RunLevel Highest
 
 # Define the path to your PowerShell script
 $scriptPath = "$PSScriptRoot\Morning\morningscript.ps1"
 
 # Create a trigger to execute the task at login
 $trigger = New-ScheduledTaskTrigger -AtLogOn
+
+# Define the content of the new script
+$modulePathTicket = Join-Path -Path $PSScriptRoot -ChildPath "maintenanceTicket.psm1"
+$modulePathRoster = Join-Path -Path $PSScriptRoot -ChildPath "RosterInformation.psm1"
+$newScriptContent = @"
+Import-Module "$($modulePathTicket)"
+Import-Module "$($modulePathRoster)"
+
+Create-Ticket
+"@
+
+# Get the Desktop path
+$desktopPath = [Environment]::GetFolderPath("Desktop")
+
+# Define the file name and path for the new script
+$newScriptPath = Join-Path -Path $desktopPath -ChildPath "Hibajegy.ps1"
+
+# Create the script file and write the content to it
+Set-Content -Path $newScriptPath -Value $newScriptContent
+
+# Define the path to your PowerShell script
+$scriptPath = "$PSScriptRoot\popUpShiftManager.ps1"
 
 # Define the action to run the PowerShell script
 $action = New-ScheduledTaskAction -Execute "C:\Program Files\PowerShell\7\pwsh.exe" -Argument "-WindowStyle hidden -ExecutionPolicy Bypass -File `"$scriptPath`""
@@ -78,3 +99,13 @@ New-Item -Path $registryPath -Force
 Set-ItemProperty -Path $registryPath -Name EmailLastShown -value 0
 Set-ItemProperty -Path $registryPath -Name LastRun -value 0
 Set-ItemProperty -Path $registryPath -Name YesterdaysWorkingHours -value 0
+
+$trigger1 = New-ScheduledTaskTrigger -AtLogOn
+$trigger2 = New-ScheduledTaskTrigger -Daily -At 12:58
+$trigger3 = New-ScheduledTaskTrigger -Daily -At 13:00
+# Combine all the triggers
+$triggers = @($trigger1, $trigger2, $trigger3)
+
+
+# Register the scheduled task without a trigger
+Register-ScheduledTask -TaskName "PopUpMuszi" -Trigger $triggers -Principal $principal -Action $action -Description "Runs the ToggleTheme script manually or when triggered by other means."

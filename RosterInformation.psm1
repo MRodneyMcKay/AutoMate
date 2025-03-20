@@ -112,10 +112,13 @@ function Get-Name {
     if ($found) {
         return [PSCustomObject]@{
             Name  = $($workSheet.Cells($found.Row(), $header.Cells.Column + 1).Value2)
-            Shift = $($workSheet.Cells($found.Row(), $header.Cells.Column + $date.Day).Text)
+            Shift = $($workSheet.Cells($found.Row(), $($ColumnOffset + $date.Day)).Text)
         }
     } else {
         Write-Error "$ShiftID not found in the worksheet."
-        return $null
+        return [PSCustomObject]@{
+            Name  = $null
+            Shift = $ShiftID
+        }
     }
 }
