@@ -1,3 +1,5 @@
+Import-Module "$PSScriptRoot\TestSchoolday.psm1"
+
 # Function to calculate the date of the next Monday
 function Get-NextMonday {
     for ($i = 1; $i -le 7; $i++) {
@@ -40,12 +42,7 @@ function Process-Document {
     $Document.Save()
 
     # Handle holiday-specific printing logic
-    if ($ReplaceDate -ge (Get-Date "2024-10-26") -and $ReplaceDate -le (Get-Date "2024-11-03") -or
-        $ReplaceDate -ge (Get-Date "2024-12-21") -and $ReplaceDate -le (Get-Date "2025-01-05") -or
-        $ReplaceDate -ge (Get-Date "2025-04-17") -and $ReplaceDate -le (Get-Date "2025-04-27") -or
-        $ReplaceDate -eq (Get-Date "2025-05-01")) {
-        Write-Output "Holiday detected. Skipping printing."
-    } else {
+    if (Test-Schoolday -date $ReplaceDate) {
         $Document.PrintOut()
     }
 
