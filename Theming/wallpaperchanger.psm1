@@ -1,3 +1,7 @@
+# This file is based on "Set-Wall.ps1" originally created by 5nik7.
+# Modifications made by MRodneyMcKay, 2025.
+# Changes include: adding a wrapper function and making the script into a module.
+
 function Set-DesktopWallpaper {
     <#
     .DESCRIPTION
