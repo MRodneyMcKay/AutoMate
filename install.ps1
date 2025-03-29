@@ -26,7 +26,11 @@ function New-ScheduledTask {
         [string]$Description,
         [object]$Principal
     )
-    $action = New-ScheduledTaskAction -Execute "C:\Program Files\PowerShell\7\pwsh.exe" -Argument "-WindowStyle hidden -ExecutionPolicy Bypass -File `"$ScriptPath`""
+    $pwshPath = (Get-Command pwsh).Source
+    if (-not (Test-Path $pwshPath)) {
+        throw "PowerShell executable not found."
+    }
+    $action = New-ScheduledTaskAction -Execute $pwshPath -Argument "-WindowStyle hidden -ExecutionPolicy Bypass -File `"$ScriptPath`""
     if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {
         Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false
     }
@@ -35,7 +39,7 @@ function New-ScheduledTask {
 }
 
 # Function to create registry keys
-function Create-RegistryKeys {
+function New-RegistryKeys {
     param (
         [string]$RegistryPath,
         [hashtable]$Properties
@@ -69,7 +73,7 @@ $registryProperties = @{
 }
 
 # Create registry keys
-Create-RegistryKeys -RegistryPath $registryPath -Properties $registryProperties
+New-RegistryKeys -RegistryPath $registryPath -Properties $registryProperties
 
 # Define scheduled tasks
 $tasks = @(
@@ -89,14 +93,14 @@ $tasks = @(
         TaskName    = "Monthly print TIG"
         ScriptPath  = "$PSScriptRoot\Printing\MonthlyTIGprint.ps1"
         Triggers    = @(
-            New-ScheduledTaskTrigger -Once -At (Get-Date "2025-03-31 15:30:00")
-            New-ScheduledTaskTrigger -Once -At (Get-Date "2025-04-30 15:30:00")
-            New-ScheduledTaskTrigger -Once -At (Get-Date "2025-05-31 15:30:00")
-            New-ScheduledTaskTrigger -Once -At (Get-Date "2025-06-30 15:30:00")
-            New-ScheduledTaskTrigger -Once -At (Get-Date "2025-08-31 15:30:00")
-            New-ScheduledTaskTrigger -Once -At (Get-Date "2025-09-30 15:30:00")
-            New-ScheduledTaskTrigger -Once -At (Get-Date "2025-10-31 15:30:00")
-            New-ScheduledTaskTrigger -Once -At (Get-Date "2025-11-30 15:30:00")
+            New-ScheduledTaskTrigger -Once -At ([datetime] "2025-03-31 15:30:00")
+            New-ScheduledTaskTrigger -Once -At ([datetime] "2025-04-30 15:30:00")
+            New-ScheduledTaskTrigger -Once -At ([datetime] "2025-05-31 15:30:00")
+            New-ScheduledTaskTrigger -Once -At ([datetime] "2025-06-30 15:30:00")
+            New-ScheduledTaskTrigger -Once -At ([datetime] "2025-08-31 15:30:00")
+            New-ScheduledTaskTrigger -Once -At ([datetime] "2025-09-30 15:30:00")
+            New-ScheduledTaskTrigger -Once -At ([datetime] "2025-10-31 15:30:00")
+            New-ScheduledTaskTrigger -Once -At ([datetime] "2025-11-30 15:30:00")
         )
         Description = "Runs the Monthly TIG print script."
     },
@@ -133,14 +137,13 @@ $tasks = @(
 # Register all scheduled tasks
 foreach ($task in $tasks) {
     if ($task.TaskName -eq "PrintWeeklyUNP"){
-        $task.Triggers[0].EndBoundary = (Get-Date "2025-06-30 15:00:00").ToString("yyyy-MM-dd'T'HH:mm:ss")
+        $task.Triggers[0].EndBoundary = ([datetime] "2025-06-30 15:00:00")
     }    
     New-ScheduledTask -TaskName $task.TaskName -ScriptPath $task.ScriptPath -Triggers $task.Triggers -Description $task.Description -Principal $principal
 }
 
 # Create a script on the desktop
 $modulePathTicket = Join-Path -Path $PSScriptRoot -ChildPath "maintenanceTicket.psm1"
-$modulePathRoster = Join-Path -Path $PSScriptRoot -ChildPath "RosterInformation.psm1"
 $newScriptContent = @"
 Import-Module "$($modulePathTicket)"
 
