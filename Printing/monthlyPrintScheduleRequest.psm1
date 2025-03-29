@@ -103,7 +103,7 @@ function Print-Igeny {
     $Word = $WordObjects.Word
     $Document = $WordObjects.Document
 
-    $PageRange = Get-PageRange -MonthOffset 0 -StartMultiplier $StartMultiplier -EndMultiplier $EndMultiplier
+    $PageRange = Get-PageRange -MonthOffset 1 -StartMultiplier $StartMultiplier -EndMultiplier $EndMultiplier
     Print-Document -Document $Document -PageRange $PageRange
 
     Cleanup-WordObjects -Word $Word -Document $Document
