@@ -15,10 +15,10 @@ if (Test-Schoolday) {
     $Filename = "$($base)-=SABLON=-\$nap.docx"
     $Word=NEW-Object –comobject Word.Application
     $Word.visible=$true
-    if (-Not ([System.IO.Directory]::Exists($SaveAsDir))) {
-        mkdir -p $SaveAsDir
+    if (-Not (Test-Path $SaveAsDir)) {
+        New-Item -Path $SaveAsDir -ItemType Directory -Force
     }
-    if (-Not ([System.IO.File]::Exists($SaveAs))) {
+    if (-Not (Test-Path $SaveAs)) {
         $Document=$Word.documents.open($Filename)
         $Document.SaveAs2($SaveAs)
     } else{

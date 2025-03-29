@@ -165,9 +165,8 @@ function open-StudentWorkReportFurdo {
     $honap = $yesterday.ToString('MMMM')
     $elszamolas = "$($base)Diák elszámolás\"
     $saveAsDir= "$($elszamolas)$($yesterday.ToString('yyyy.MM')) - $honap\"
-    if (-Not ([System.IO.Directory]::Exists($SaveAsDir)))
-    {
-        mkdir -p $SaveAsDir
+    if (-Not (Test-Path $SaveAsDir)) {
+        New-Item -Path $SaveAsDir -ItemType Directory -Force
     }
     $savaAsFurdo= "$($saveAsDir)$($yesterday.ToString('yyyy.MM.dd.')).xlsx"
 
@@ -197,8 +196,7 @@ function open-StudentWorkReportFurdo {
     
     if (0 -ne $igeny.Count) {
         $furdosablon = Create-Template $igeny $fillCompletely $("Napi diákmunka elszámolás " + $yesterday.ToString("yyyy. MMMM dd."))
-        if (-Not ([System.IO.File]::Exists($savaAsFurdo)))
-        {
+        if (-Not (Test-Path $savaAsFurdo)) {
             $furdosablon.Workbook.SaveAs($savaAsFurdo,[Type]::Missing, [Type]::Missing, [Type]::Missing, [Type]::Missing, [Type]::Missing, [Type]::Missing, [Type]::Missing, $true)
         }
         $furdosablon.Application.visible=$true
@@ -219,9 +217,8 @@ function open-StudentWorkReportStrand {
         $honap = $yesterday.ToString('MMMM')
         $elszamolas = "$($base)Diák elszámolás\"
         $saveAsDir= "$($elszamolas)$($yesterday.ToString('yyyy.MM')) - $honap\"
-        if (-Not ([System.IO.Directory]::Exists($SaveAsDir)))
-        {
-            mkdir -p $SaveAsDir
+        if (-Not (Test-Path $SaveAsDir)) {
+            New-Item -Path $SaveAsDir -ItemType Directory -Force
         }
 
     $igeny = [ordered]@{}
@@ -252,8 +249,7 @@ function open-StudentWorkReportStrand {
     
     if (0 -ne $igeny.Count) {
         $strandsablon = Create-Template $igeny $fillCompletely $("Napi diákmunka elszámolás - STRAND - " + $yesterday.ToString("yyyy. MMMM dd."))
-        if (-Not ([System.IO.File]::Exists($saveAsStrand)))
-        {
+        if (-Not (Test-Path $saveAsStrand)) {
             $strandsablon.Workbook.SaveAs($saveAsStrand,[Type]::Missing, [Type]::Missing, [Type]::Missing, [Type]::Missing, [Type]::Missing, [Type]::Missing, [Type]::Missing, $true)
         }
         $strandsablon.Application.visible = $true
