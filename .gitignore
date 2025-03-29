@@ -1,0 +1,10 @@
+# Ignore everything
+*
+
+# Allow only PowerShell script files
+!*.ps1
+!*.psm1
+
+# Allow Git-related files
+!.gitignore
+!.gitattributes

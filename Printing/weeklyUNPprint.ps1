@@ -1,3 +1,22 @@
+<#  
+    This file is part of sturdy-octo-garbanzo.  
+
+    sturdy-octo-garbanzo is free software: you can redistribute it and/or modify  
+    it under the terms of the GNU General Public License as published by  
+    the Free Software Foundation, either version 3 of the License, or  
+    (at your option) any later version.  
+
+    This program is distributed in the hope that it will be useful,  
+    but WITHOUT ANY WARRANTY; without even the implied warranty of  
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the  
+    GNU General Public License for more details.  
+
+    You should have received a copy of the GNU General Public License  
+    along with this program. If not, see <https://www.gnu.org/licenses/>.  
+#>
+
+Import-Module "$PSScriptRoot\TestSchoolday.psm1"
+
 # Function to calculate the date of the next Monday
 function Get-NextMonday {
     for ($i = 1; $i -le 7; $i++) {
@@ -40,12 +59,7 @@ function Process-Document {
     $Document.Save()
 
     # Handle holiday-specific printing logic
-    if ($ReplaceDate -ge (Get-Date "2024-10-26") -and $ReplaceDate -le (Get-Date "2024-11-03") -or
-        $ReplaceDate -ge (Get-Date "2024-12-21") -and $ReplaceDate -le (Get-Date "2025-01-05") -or
-        $ReplaceDate -ge (Get-Date "2025-04-17") -and $ReplaceDate -le (Get-Date "2025-04-27") -or
-        $ReplaceDate -eq (Get-Date "2025-05-01")) {
-        Write-Output "Holiday detected. Skipping printing."
-    } else {
+    if (Test-Schoolday -date $ReplaceDate) {
         $Document.PrintOut()
     }
 

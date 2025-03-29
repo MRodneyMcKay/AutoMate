@@ -15,18 +15,23 @@
     along with this program. If not, see <https://www.gnu.org/licenses/>.  
 #>
 
-Import-Module "$PSScriptRoot\MonthlyCommutingAllowancePrint.psm1"
-Import-Module "$PSScriptRoot\monthlyPrintAttendceSheetCollegues.psm1"
-Import-Module "$PSScriptRoot\monthlyPrintScheduleRequest.psm1"
+function Test-Schoolday {
+    param (
+        [datetime]$date = (Get-Date)
+    )
 
-$path = Get-SheetPath
+    $schooldayRanges = @(
+        [PSCustomObject]@{ Start = '2024-10-26'; End = '2024-11-03' },
+        [PSCustomObject]@{ Start = '2024-12-21'; End = '2025-01-05' },
+        [PSCustomObject]@{ Start = '2025-04-17'; End = '2025-04-27' },
+        [PSCustomObject]@{ Start = '2025-06-21'; End = '2025-09-01' }
+    )
 
-Print-RequestFrontOffice
-Print-AttandanceSheetFrontOffice -OpenFile $path
+    foreach ($range in $schooldayRanges) {
+        if ($date -ge (Get-Date $range.Start) -and $date -le (Get-Date $range.End)) {
+            return $false
+        }
+    }
 
-Print-RequestUszomester
-Print-CommutingAllowance
-Print-AttandanceSheetUszomester -OpenFile $path
-
-Print-AttandanceSheetKarbantarto -OpenFile $path
-Print-AttandanceSheetGepesz -OpenFile $path
+    return $true
+}

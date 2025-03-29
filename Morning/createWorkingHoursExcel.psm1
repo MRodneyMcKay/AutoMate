@@ -1,3 +1,20 @@
+<#  
+    This file is part of sturdy-octo-garbanzo.  
+
+    sturdy-octo-garbanzo is free software: you can redistribute it and/or modify  
+    it under the terms of the GNU General Public License as published by  
+    the Free Software Foundation, either version 3 of the License, or  
+    (at your option) any later version.  
+
+    This program is distributed in the hope that it will be useful,  
+    but WITHOUT ANY WARRANTY; without even the implied warranty of  
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the  
+    GNU General Public License for more details.  
+
+    You should have received a copy of the GNU General Public License  
+    along with this program. If not, see <https://www.gnu.org/licenses/>.  
+#>
+
 Import-Module "$PSScriptRoot\createTemplate.psm1"
 Add-Type -AssemblyName PresentationFramework
 [System.Reflection.Assembly]::LoadFrom("C:\Windows\Microsoft.NET\Framework64\v4.0.30319\System.Windows.Forms.dll")
@@ -165,9 +182,8 @@ function open-StudentWorkReportFurdo {
     $honap = $yesterday.ToString('MMMM')
     $elszamolas = "$($base)Diák elszámolás\"
     $saveAsDir= "$($elszamolas)$($yesterday.ToString('yyyy.MM')) - $honap\"
-    if (-Not ([System.IO.Directory]::Exists($SaveAsDir)))
-    {
-        mkdir -p $SaveAsDir
+    if (-Not (Test-Path $SaveAsDir)) {
+        New-Item -Path $SaveAsDir -ItemType Directory -Force
     }
     $savaAsFurdo= "$($saveAsDir)$($yesterday.ToString('yyyy.MM.dd.')).xlsx"
 
@@ -197,8 +213,7 @@ function open-StudentWorkReportFurdo {
     
     if (0 -ne $igeny.Count) {
         $furdosablon = Create-Template $igeny $fillCompletely $("Napi diákmunka elszámolás " + $yesterday.ToString("yyyy. MMMM dd."))
-        if (-Not ([System.IO.File]::Exists($savaAsFurdo)))
-        {
+        if (-Not (Test-Path $savaAsFurdo)) {
             $furdosablon.Workbook.SaveAs($savaAsFurdo,[Type]::Missing, [Type]::Missing, [Type]::Missing, [Type]::Missing, [Type]::Missing, [Type]::Missing, [Type]::Missing, $true)
         }
         $furdosablon.Application.visible=$true
@@ -219,9 +234,8 @@ function open-StudentWorkReportStrand {
         $honap = $yesterday.ToString('MMMM')
         $elszamolas = "$($base)Diák elszámolás\"
         $saveAsDir= "$($elszamolas)$($yesterday.ToString('yyyy.MM')) - $honap\"
-        if (-Not ([System.IO.Directory]::Exists($SaveAsDir)))
-        {
-            mkdir -p $SaveAsDir
+        if (-Not (Test-Path $SaveAsDir)) {
+            New-Item -Path $SaveAsDir -ItemType Directory -Force
         }
 
     $igeny = [ordered]@{}
@@ -252,8 +266,7 @@ function open-StudentWorkReportStrand {
     
     if (0 -ne $igeny.Count) {
         $strandsablon = Create-Template $igeny $fillCompletely $("Napi diákmunka elszámolás - STRAND - " + $yesterday.ToString("yyyy. MMMM dd."))
-        if (-Not ([System.IO.File]::Exists($saveAsStrand)))
-        {
+        if (-Not (Test-Path $saveAsStrand)) {
             $strandsablon.Workbook.SaveAs($saveAsStrand,[Type]::Missing, [Type]::Missing, [Type]::Missing, [Type]::Missing, [Type]::Missing, [Type]::Missing, [Type]::Missing, $true)
         }
         $strandsablon.Application.visible = $true
