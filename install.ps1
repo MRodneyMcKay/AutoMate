@@ -26,7 +26,11 @@ function New-ScheduledTask {
         [string]$Description,
         [object]$Principal
     )
-    $action = New-ScheduledTaskAction -Execute "C:\Program Files\PowerShell\7\pwsh.exe" -Argument "-WindowStyle hidden -ExecutionPolicy Bypass -File `"$ScriptPath`""
+    $pwshPath = (Get-Command pwsh).Source
+    if (-not (Test-Path $pwshPath)) {
+        throw "PowerShell executable not found."
+    }
+    $action = New-ScheduledTaskAction -Execute $pwshPath -Argument "-WindowStyle hidden -ExecutionPolicy Bypass -File `"$ScriptPath`""
     if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {
         Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false
     }
@@ -35,7 +39,7 @@ function New-ScheduledTask {
 }
 
 # Function to create registry keys
-function Create-RegistryKeys {
+function New-RegistryKeys {
     param (
         [string]$RegistryPath,
         [hashtable]$Properties
@@ -69,7 +73,7 @@ $registryProperties = @{
 }
 
 # Create registry keys
-Create-RegistryKeys -RegistryPath $registryPath -Properties $registryProperties
+New-RegistryKeys -RegistryPath $registryPath -Properties $registryProperties
 
 # Define scheduled tasks
 $tasks = @(
