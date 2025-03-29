@@ -16,6 +16,7 @@
 #>
 
 # Load the Microsoft.Office.Interop.Excel assembly
+Import-Module $PSScriptRoot\log.psm1
 
 $possiblePaths = @(
     "C:\Program Files\Microsoft Office\root\Office16\Microsoft.Office.Interop.Excel.dll",
@@ -104,6 +105,7 @@ function Get-ShiftManager
     $filePath=$items.FullName
     $ExcelBack = New-Object -ComObject Excel.Application
     $ExcelBack.visible=$false
+    Write-Log -Message "Opening file: $filePath"
     $Workbook = $ExcelBack.Workbooks.Open($filePath)
     $workSheet = $Workbook.Sheets.Item(1)
     $roster = @()
