@@ -22,7 +22,7 @@ To get started with these scripts, follow these steps:
 
 1. Clone the repository:
     ```sh
-    git clone https://github.com/yourusername/AutoMate.git
+    git clone https://github.com/MRodneyMcKay/AutoMate.git
     ```
 2. Navigate to the repository directory:
     ```sh
