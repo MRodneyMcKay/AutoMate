@@ -27,7 +27,11 @@ function Create-ScheduledTask {
         [object]$Principal
     )
     $action = New-ScheduledTaskAction -Execute "C:\Program Files\PowerShell\7\pwsh.exe" -Argument "-WindowStyle hidden -ExecutionPolicy Bypass -File `"$ScriptPath`""
-    Register-ScheduledTask -TaskName $TaskName -Trigger $Triggers -Principal $Principal -Action $action -Description $Description
+    if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {
+        Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false
+    }
+    Register-ScheduledTask -TaskName $TaskName -Principal $Principal -Action $action -Description $Description
+    Set-ScheduledTask -TaskName $TaskName -Trigger $triggers
 }
 
 # Function to create registry keys
@@ -80,24 +84,18 @@ $tasks = @(
         ScriptPath  = "$PSScriptRoot\Theming\themeChangeManager.ps1"
         Triggers    = @(New-ScheduledTaskTrigger -AtLogOn)
         Description = "Runs the Theme Change Manager script at user login."
-    },
-    @{
-        TaskName    = "ToggleTheme"
-        ScriptPath  = "$PSScriptRoot\Theming\applyTheme.ps1"
-        Triggers    = @()
-        Description = "Runs the ToggleTheme script manually or when triggered by other means."
-    },
+    },    
     @{
         TaskName    = "Monthly print TIG"
         ScriptPath  = "$PSScriptRoot\Printing\MonthlyTIGprint.ps1"
         Triggers    = @(
-            New-ScheduledTaskTrigger -Once -At (Get-Date "2025-03-31 15:30:00"),
-            New-ScheduledTaskTrigger -Once -At (Get-Date "2025-04-30 15:30:00"),
-            New-ScheduledTaskTrigger -Once -At (Get-Date "2025-05-31 15:30:00"),
-            New-ScheduledTaskTrigger -Once -At (Get-Date "2025-06-30 15:30:00"),
-            New-ScheduledTaskTrigger -Once -At (Get-Date "2025-08-31 15:30:00"),
-            New-ScheduledTaskTrigger -Once -At (Get-Date "2025-09-30 15:30:00"),
-            New-ScheduledTaskTrigger -Once -At (Get-Date "2025-10-31 15:30:00"),
+            New-ScheduledTaskTrigger -Once -At (Get-Date "2025-03-31 15:30:00")
+            New-ScheduledTaskTrigger -Once -At (Get-Date "2025-04-30 15:30:00")
+            New-ScheduledTaskTrigger -Once -At (Get-Date "2025-05-31 15:30:00")
+            New-ScheduledTaskTrigger -Once -At (Get-Date "2025-06-30 15:30:00")
+            New-ScheduledTaskTrigger -Once -At (Get-Date "2025-08-31 15:30:00")
+            New-ScheduledTaskTrigger -Once -At (Get-Date "2025-09-30 15:30:00")
+            New-ScheduledTaskTrigger -Once -At (Get-Date "2025-10-31 15:30:00")
             New-ScheduledTaskTrigger -Once -At (Get-Date "2025-11-30 15:30:00")
         )
         Description = "Runs the Monthly TIG print script."
@@ -105,7 +103,7 @@ $tasks = @(
     @{
         TaskName    = "PrintWeeklyUNP"
         ScriptPath  = "$PSScriptRoot\Printing.Printing\weeklyUNPprint.ps1"
-        Triggers    = @(New-ScheduledTaskTrigger -Weekly -DaysOfWeek Friday -At 3:00PM -EndBoundary "2025-06-13T23:59:59")
+        Triggers    = @(New-ScheduledTaskTrigger -Weekly -DaysOfWeek Friday -At (Get-Date -Hour 15 -Minute 0))
         Description = "Runs the printweeklyUNP script, which saves and prints sheets for UNP."
     },
     @{
@@ -118,16 +116,25 @@ $tasks = @(
         TaskName    = "PopUpMuszi"
         ScriptPath  = "$PSScriptRoot\popUpShiftManager.ps1"
         Triggers    = @(
-            New-ScheduledTaskTrigger -Daily -At 12:58,
-            New-ScheduledTaskTrigger -Daily -At 13:00,
+            New-ScheduledTaskTrigger -Daily -At (Get-Date -Hour 12 -Minute 58)
+            New-ScheduledTaskTrigger -Daily -At (Get-Date -Hour 13 -Minute 0)
             New-ScheduledTaskTrigger -AtLogOn
         )
         Description = "Runs the PopUpMuszi script manually or when triggered by other means."
+    },
+    @{
+        TaskName    = "ToggleTheme"
+        ScriptPath  = "$PSScriptRoot\Theming\applyTheme.ps1"
+        Triggers    = @()
+        Description = "Runs the ToggleTheme script manually or when triggered by other means."
     }
 )
 
 # Register all scheduled tasks
 foreach ($task in $tasks) {
+    if ($task.TaskName -eq "PrintWeeklyUNP"){
+        $task.Triggers[0].EndBoundary = (Get-Date "2025-06-30 15:00:00").ToString("yyyy-MM-dd'T'HH:mm:ss")
+    }    
     Create-ScheduledTask -TaskName $task.TaskName -ScriptPath $task.ScriptPath -Triggers $task.Triggers -Description $task.Description -Principal $principal
 }
 
