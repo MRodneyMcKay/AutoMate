@@ -17,7 +17,7 @@
 
 Import-Module $PSScriptRoot\RosterInformation.psm1
 
-function Create-Ticket {
+function New-Ticket {
     
 $shiftManager = (Get-ShiftManager)[(Get-Date).TimeOfDay -lt (New-TimeSpan -Hours 12 -Minutes 55) ? 0 : 1].Name
 

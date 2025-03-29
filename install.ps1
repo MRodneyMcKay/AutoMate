@@ -18,7 +18,7 @@
 # Define reusable functions for common tasks
 
 # Function to create a scheduled task
-function Create-ScheduledTask {
+function New-ScheduledTask {
     param (
         [string]$TaskName,
         [string]$ScriptPath,
@@ -61,7 +61,7 @@ function Create-ScriptOnDesktop {
 $principal = New-ScheduledTaskPrincipal -UserId "HIROSSPORT" -LogonType ServiceAccount -RunLevel Highest
 
 # Define registry path and properties
-$registryPath = "HKCU:\Software\Script1"
+$registryPath = "HKCU:\Software\Script"
 $registryProperties = @{
     EmailLastShown        = 0
     LastRun               = 0
@@ -102,13 +102,13 @@ $tasks = @(
     },
     @{
         TaskName    = "PrintWeeklyUNP"
-        ScriptPath  = "$PSScriptRoot\Printing.Printing\weeklyUNPprint.ps1"
+        ScriptPath  = "$PSScriptRoot\Printing\weeklyUNPprint.ps1"
         Triggers    = @(New-ScheduledTaskTrigger -Weekly -DaysOfWeek Friday -At (Get-Date -Hour 15 -Minute 0))
         Description = "Runs the printweeklyUNP script, which saves and prints sheets for UNP."
     },
     @{
         TaskName    = "Morning routine"
-        ScriptPath  = "$PSScriptRoot\popUpShiftManager.ps1"
+        ScriptPath  = "$PSScriptRoot\Morning\morningscript.ps1"
         Triggers    = @(New-ScheduledTaskTrigger -AtLogOn)
         Description = "Runs the Morning routine."
     },
@@ -135,7 +135,7 @@ foreach ($task in $tasks) {
     if ($task.TaskName -eq "PrintWeeklyUNP"){
         $task.Triggers[0].EndBoundary = (Get-Date "2025-06-30 15:00:00").ToString("yyyy-MM-dd'T'HH:mm:ss")
     }    
-    Create-ScheduledTask -TaskName $task.TaskName -ScriptPath $task.ScriptPath -Triggers $task.Triggers -Description $task.Description -Principal $principal
+    New-ScheduledTask -TaskName $task.TaskName -ScriptPath $task.ScriptPath -Triggers $task.Triggers -Description $task.Description -Principal $principal
 }
 
 # Create a script on the desktop
@@ -143,8 +143,7 @@ $modulePathTicket = Join-Path -Path $PSScriptRoot -ChildPath "maintenanceTicket.
 $modulePathRoster = Join-Path -Path $PSScriptRoot -ChildPath "RosterInformation.psm1"
 $newScriptContent = @"
 Import-Module "$($modulePathTicket)"
-Import-Module "$($modulePathRoster)"
 
-Create-Ticket
+New-Ticket
 "@
 Create-ScriptOnDesktop -FileName "Hibajegy.ps1" -Content $newScriptContent
