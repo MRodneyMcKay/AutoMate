@@ -1,4 +1,4 @@
-# sturdy-octo-garbanzo
+# AutoMate
 
 This repository contains scripts that automate various tasks to make work easier. The scripts are written in PowerShell and use COM objects to interact with Microsoft Office applications. They also rely on scheduled tasks to run at specific times.
 
@@ -22,11 +22,11 @@ To get started with these scripts, follow these steps:
 
 1. Clone the repository:
     ```sh
-    git clone https://github.com/yourusername/sturdy-octo-garbanzo.git
+    git clone https://github.com/yourusername/AutoMate.git
     ```
 2. Navigate to the repository directory:
     ```sh
-    cd sturdy-octo-garbanzo
+    cd AutoMate
     ```
 3. Review and configure the scripts as needed.
 
@@ -34,8 +34,8 @@ To get started with these scripts, follow these steps:
 
 1. Clone the repository and navigate to the directory:
     ```sh
-    git clone https://github.com/yourusername/sturdy-octo-garbanzo.git
-    cd sturdy-octo-garbanzo
+    git clone https://github.com/yourusername/AutoMate.git
+    cd AutoMate
     ```
 2. Run the install script to create all the necessary registry keys and scheduled tasks:
     ```sh
