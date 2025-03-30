@@ -1,6 +1,9 @@
 # Ignore everything
 *
 
+# Allow directories containing allowed files
+!*/
+
 # Allow only PowerShell script files
 !*.ps1
 !*.psm1
