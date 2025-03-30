@@ -16,7 +16,6 @@
 #>
 
 # Load the Microsoft.Office.Interop.Excel assembly
-Import-Module $PSScriptRoot\log.psm1
 
 $possiblePaths = @(
     "C:\Program Files\Microsoft Office\root\Office16\Microsoft.Office.Interop.Excel.dll",
