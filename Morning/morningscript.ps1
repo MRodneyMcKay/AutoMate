@@ -38,4 +38,6 @@ if ($(Get-ItemPropertyValue -Path $registryPath -Name YesterdaysWorkingHours) -n
     Set-ItemProperty -Path $registryPath -Name YesterdaysWorkingHours -value (Get-Date).Day
 }
 
+Start-Process msedge
+
 Set-ItemProperty -Path $registryPath -Name LastRun -value (Get-Date).Day
