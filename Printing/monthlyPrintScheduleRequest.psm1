@@ -15,7 +15,7 @@
     along with this program. If not, see <https://www.gnu.org/licenses/>.  
 #>
 
-Add-Type -Path "C:\Windows\assembly\GAC_MSIL\Microsoft.Office.Interop.Word\15.0.0.0__71e9bce111e9429c\Microsoft.Office.Interop.Word.dll"
+[System.Reflection.Assembly]::LoadFrom([System.Environment]::GetEnvironmentVariable("OfficeAssemblies_Word", [System.EnvironmentVariableTarget]::User)) 
 
 # Function to configure the printer
 function Configure-Printer {

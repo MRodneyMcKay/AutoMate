@@ -150,3 +150,13 @@ Import-Module "$($modulePathTicket)"
 New-Ticket
 "@
 Create-ScriptOnDesktop -FileName "Hibajegy.ps1" -Content $newScriptContent
+
+#saving office interop dll assembly paths to environment variables
+# Define Office Interop assemblies
+$assemblies = @("Excel", "Outlook", "Word")
+
+# Iterate over each assembly, load it, get the location, and store it in environment variables
+foreach ($assembly in $assemblies) {
+    $dll_path = powershell.exe -Command "[System.Reflection.Assembly]::LoadWithPartialName('Microsoft.Office.Interop.$assembly') | Select-Object -ExpandProperty Location | Out-String"
+    [System.Environment]::SetEnvironmentVariable("OfficeAssemblies_$assembly", $dll_path.Trim(), [System.EnvironmentVariableTarget]::User)
+}
