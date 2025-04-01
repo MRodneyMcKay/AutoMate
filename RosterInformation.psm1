@@ -15,7 +15,6 @@
     along with this program. If not, see <https://www.gnu.org/licenses/>.  
 #>
 
-# Load the Microsoft.Office.Interop.Excel assembly
 [System.Reflection.Assembly]::LoadFrom([System.Environment]::GetEnvironmentVariable("OfficeAssemblies_Excel", [System.EnvironmentVariableTarget]::User)) 
 
 function Get-Receptionists {

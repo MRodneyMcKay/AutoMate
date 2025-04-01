@@ -26,10 +26,7 @@ $today = Get-Date
 $Excel = New-Object -ComObject Excel.Application
 $Excel.visible=$false
 
-$outlook = New-Object -comObject Outlook.Application
-$mail = $outlook.createitemfromtemplate("C:\Users\Hirossport\Hiros Sport Nonprofit Kft\Hiros-sport - Dokumentumok\Furdo\Recepcio\Email sablonok\HIBA.oft")
-$inspector = $mail.GetInspector
-$inspector.Display()
+Invoke-Item "C:\Users\Hirossport\Hiros Sport Nonprofit Kft\Hiros-sport - Dokumentumok\Furdo\Recepcio\Email sablonok\HIBA.oft"
 
 $Workbook = $Excel.Workbooks.Open("C:\Users\Hirossport\Hiros Sport Nonprofit Kft\Hiros-sport - Dokumentumok\Furdo\Recepcio\HIBA\-=SABLON=-\HIBA jelentés.xlsx")
 $workSheet = $Workbook.Sheets.Item("Munka1")
