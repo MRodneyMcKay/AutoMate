@@ -15,6 +15,7 @@
     along with this program. If not, see <https://www.gnu.org/licenses/>.  
 #>
 
+Import-Module (Join-Path -Path $PSScriptRoot -ChildPath '..\Log.psm1')
 Import-Module "$PSScriptRoot\themes.psm1"
 
 # Get the value of the environment variable
@@ -24,6 +25,7 @@ $theme = [System.Environment]::GetEnvironmentVariable('ApplyTheme', [System.Envi
 $functionName = "Set-$theme"
 if (Get-Command $functionName -ErrorAction SilentlyContinue) {
     & $functionName
+    Write-Log -Message "témaváltás sikeresen kezdeményezve"
 } else {
-    Write-Error "Unknown environmental variable value"
+    Write-Log -Message "Nem tudom milyen témát űllítsak be: $theme" -Level "ERROR"
 }
