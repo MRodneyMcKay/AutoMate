@@ -15,6 +15,7 @@
     along with this program. If not, see <https://www.gnu.org/licenses/>.  
 #>
 
+[System.Reflection.Assembly]::LoadFrom([System.Environment]::GetEnvironmentVariable("OfficeAssemblies_Outlook", [System.EnvironmentVariableTarget]::User)) 
 function Open-OutlookFolder {
     param (
         [object]$Outlook,

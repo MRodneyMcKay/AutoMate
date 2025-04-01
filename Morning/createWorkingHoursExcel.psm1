@@ -18,7 +18,7 @@
 Import-Module "$PSScriptRoot\createTemplate.psm1"
 Add-Type -AssemblyName PresentationFramework
 [System.Reflection.Assembly]::LoadFrom("C:\Windows\Microsoft.NET\Framework64\v4.0.30319\System.Windows.Forms.dll")
-[System.Reflection.Assembly]::LoadFrom("C:\Windows\assembly\GAC_MSIL\Microsoft.Office.Interop.Excel\15.0.0.0__71e9bce111e9429c\Microsoft.Office.Interop.Excel.dll ") 
+[System.Reflection.Assembly]::LoadFrom([System.Environment]::GetEnvironmentVariable("OfficeAssemblies_Excel", [System.EnvironmentVariableTarget]::User)) 
 
 function Show-ErrorMessage {
     param (

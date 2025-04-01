@@ -15,6 +15,7 @@
     along with this program. If not, see <https://www.gnu.org/licenses/>.  
 #>
 
+[System.Reflection.Assembly]::LoadFrom([System.Environment]::GetEnvironmentVariable("OfficeAssemblies_Word", [System.EnvironmentVariableTarget]::User)) 
 Import-Module (Join-Path -Path $PSScriptRoot -ChildPath '..\Printing\TestSchoolday.psm1')
 # Get the current day of the week
 $today = (Get-Date)

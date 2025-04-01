@@ -16,22 +16,7 @@
 #>
 
 # Load the Microsoft.Office.Interop.Excel assembly
-Import-Module $PSScriptRoot\log.psm1
-
-$possiblePaths = @(
-    "C:\Program Files\Microsoft Office\root\Office16\Microsoft.Office.Interop.Excel.dll",
-    "C:\Program Files (x86)\Microsoft Office\root\Office16\Microsoft.Office.Interop.Excel.dll",
-    "C:\Program Files\Microsoft Office\Office16\Microsoft.Office.Interop.Excel.dll",
-    "C:\Program Files (x86)\Microsoft Office\Office16\Microsoft.Office.Interop.Excel.dll",
-    "C:\Windows\assembly\GAC_MSIL\Microsoft.Office.Interop.Excel\*\Microsoft.Office.Interop.Excel.dll"
-)
-
-$dllPath = $possiblePaths | Where-Object { Test-Path $_ } | Select-Object -First 1
-if ($dllPath) {
-    Add-Type -Path $dllPath
-} else {
-    Write-Warning "Could not find Microsoft.Office.Interop.Excel in PS7!"
-}
+[System.Reflection.Assembly]::LoadFrom([System.Environment]::GetEnvironmentVariable("OfficeAssemblies_Excel", [System.EnvironmentVariableTarget]::User)) 
 
 function Get-Receptionists {
     param (
@@ -105,7 +90,6 @@ function Get-ShiftManager
     $filePath=$items.FullName
     $ExcelBack = New-Object -ComObject Excel.Application
     $ExcelBack.visible=$false
-    Write-Log -Message "Opening file: $filePath"
     $Workbook = $ExcelBack.Workbooks.Open($filePath)
     $workSheet = $Workbook.Sheets.Item(1)
     $roster = @()

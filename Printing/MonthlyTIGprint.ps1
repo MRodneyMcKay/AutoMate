@@ -15,11 +15,6 @@
     along with this program. If not, see <https://www.gnu.org/licenses/>.  
 #>
 
-# Load the required Word Interop assembly
-function Load-WordInterop {
-    Add-Type -Path "C:\Windows\assembly\GAC_MSIL\Microsoft.Office.Interop.Word\15.0.0.0__71e9bce111e9429c\Microsoft.Office.Interop.Word.dll"
-}
-
 # Get the default printer
 function Get-DefaultPrinter {
     return (Get-CimInstance -ClassName Win32_Printer | Where-Object { $_.Default -eq $true })
@@ -103,7 +98,7 @@ function Cleanup-WordObjects {
 }
 
 # Main script logic
-Load-WordInterop
+[System.Reflection.Assembly]::LoadFrom([System.Environment]::GetEnvironmentVariable("OfficeAssemblies_Word", [System.EnvironmentVariableTarget]::User)) 
 
 $defaultPrinter = Get-DefaultPrinter
 $documentPath = "C:\Users\Hirossport\Hiros Sport Nonprofit Kft\Hiros-sport - Dokumentumok\Furdo\Recepcio\Nyomtatni\TIG jelenléti ív_2025.docx"
