@@ -15,6 +15,8 @@
     along with this program. If not, see <https://www.gnu.org/licenses/>.  
 #>
 
+Import-Module (Join-Path -Path $PSScriptRoot -ChildPath '..\Log.psm1')
+
 # Function to configure the printer
 function Configure-Printer {
     param (
@@ -149,6 +151,8 @@ $sections = $mergedDocument.Sections.Count
 $pageRange = Generate-PageRange -Month $month -Sections $sections
 
 Print-Document -Document $mergedDocument -PrinterName $defaultPrinter -PageRange $pageRange
+
+Write-Log -Message "Printing $pageRange for $($mergedDocument.Name) on $defaultPrinter"
 
 # Clean up
 Cleanup-WordObjects -Word $wordApp -MergedDocument $mergedDocument -OriginalDocument $originalDocument

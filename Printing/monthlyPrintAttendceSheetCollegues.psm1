@@ -15,6 +15,7 @@
     along with this program. If not, see <https://www.gnu.org/licenses/>.  
 #>
 
+Import-Module (Join-Path -Path $PSScriptRoot -ChildPath '..\Log.psm1')
 [System.Reflection.Assembly]::LoadWithPartialName("System.windows.forms")
 Add-Type -AssemblyName PresentationFramework
 
@@ -70,7 +71,7 @@ function Print-Worksheet {
 function Get-SheetPath {
     $OpenFile = Open-File $env:USERPROFILE
     if (-not $OpenFile) {
-        Write-Output "No file selected. Exiting."
+        Write-Log -Message "No file selected. Exiting." -Level "ERROR"
         exit
     }
     else {

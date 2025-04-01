@@ -15,6 +15,8 @@
     along with this program. If not, see <https://www.gnu.org/licenses/>.  
 #>
 
+Import-Module (Join-Path -Path $PSScriptRoot -ChildPath '..\Log.psm1')
+
 function create-Directories {
     param (
         [datetime]$Today = (Get-Date)
@@ -26,6 +28,15 @@ function create-Directories {
     $base="C:\Users\Hirossport\Hiros Sport Nonprofit Kft\Hiros-sport - Dokumentumok\Furdo\Recepcio\HIBA\HIBA $($Today.Year)\"
     $dir = "$base$Week. hét ($($Monday.ToString("MM.dd.")) - $($Sunday.ToString("MM.dd.")))"
     if (-Not (Test-Path $dir)) {
-        New-Item -Path $dir -ItemType Directory -Force
+        try {
+            New-Item -Path $dir -ItemType Directory -Force
+            Write-Log -Message "Directory created: $dir"
+        }
+        catch {
+            Write-Log -Message "Failed to create directory: $dir" -Level "ERROR"           
+        }        
     }  
+    else {
+        Write-Log -Message "Directory already exists: $dir"
+    }
 }

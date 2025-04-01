@@ -15,6 +15,8 @@
     along with this program. If not, see <https://www.gnu.org/licenses/>.  
 #>
 
+Import-Module (Join-Path -Path $PSScriptRoot -ChildPath '..\Log.psm1')
+
 # Get the default printer
 function Get-DefaultPrinter {
     return (Get-CimInstance -ClassName Win32_Printer | Where-Object { $_.Default -eq $true })
@@ -29,8 +31,17 @@ function Perform-MailMerge {
 
     $Word = New-Object -ComObject Word.Application
     $Word.Visible = $false
-
-    $doc = $Word.Documents.Open($DocumentPath)
+    try {
+        $doc = $Word.Documents.Open($DocumentPath)
+        if ($doc) {
+            Write-Log -Message "Document opened successfully: $DocumentPath" -Level "INFO"
+        } else {
+            throw
+        }
+    } catch {
+        Write-Log -Message "Failed to open document: $DocumentPath" -Level "ERROR"
+        return
+    }
     $mailMerge = $doc.MailMerge
     $mailMerge.OpenDataSource($DataSourcePath)
     $mailMerge.Destination = [Microsoft.Office.Interop.Word.WdMailMergeDestination]::wdSendToNewDocument
@@ -75,6 +86,7 @@ function Print-Document {
     $Item = 0
     $Copies = 1
     $Document.PrintOut([ref]$BackGround, [Type]::Missing, [ref]$Range, [Type]::Missing, [Type]::Missing, [Type]::Missing, [ref]$Item, [ref]$Copies, [ref]$PageRange, [Type]::Missing)
+    Write-Log -Message "Printing $PageRange pages of $($Document.Name) on $PrinterName"
 
     # Restore printer to two-sided printing
     Set-PrintConfiguration -PrinterName $PrinterName -DuplexingMode TwoSidedLongEdge

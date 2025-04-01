@@ -16,6 +16,7 @@
 #>
 
 Import-Module "$PSScriptRoot\createTemplate.psm1"
+Import-Module (Join-Path -Path $PSScriptRoot -ChildPath '..\Log.psm1')
 Add-Type -AssemblyName PresentationFramework
 [System.Reflection.Assembly]::LoadFrom("C:\Windows\Microsoft.NET\Framework64\v4.0.30319\System.Windows.Forms.dll")
 [System.Reflection.Assembly]::LoadFrom([System.Environment]::GetEnvironmentVariable("OfficeAssemblies_Excel", [System.EnvironmentVariableTarget]::User)) 
@@ -45,9 +46,11 @@ function Find-File {
     $items = "" -eq $Pattern2 ? (Get-ChildItem $Directory | Where-Object { $_.Name.Normalize() -match $Pattern } | Sort-Object -Property Name -Descending | Select-Object -First 1 ) : (Get-ChildItem $Directory | Where-Object { $_.Name.Normalize() -match $Pattern } | Where-Object Name -match $Pattern2 | Sort-Object -Property Name -Descending | Select-Object -First 1)
        
     if ($items) {
+        Write-Log -Message "Fájl megtalálva: $($items.FullName)"
         return $items.FullName
     } elseif ($PromptIfNotFound) {
-        Show-ErrorMessage -Message "Nem találom a következőt: $PromptTitle"
+        Write-Log -Message "Nem találom a következőt: $PromptTitle" -Level "ERROR"
+        #Show-ErrorMessage -Message "Nem találom a következőt: $PromptTitle"
 
         $OpenFileDialog = New-Object System.Windows.Forms.OpenFileDialog
         $OpenFileDialog.initialDirectory = $Directory
@@ -55,8 +58,10 @@ function Find-File {
         $OpenFileDialog.Title = $PromptTitle
         $OpenFileDialog.ShowDialog() |  Out-Null
         $items = Get-ChildItem $Directory | Where-Object Name -match $OpenFileDialog.SafeFileName
+        Write-Log -Message "Fájl kiválasztva: $($items.FullName)"
         return $items.FullName
     }
+    Write-Log -Message "Nem találom a következőt: $PromptTitle" -Level "WARNING"
     return ""
 }
 
@@ -139,12 +144,14 @@ function get-IgenyekHelper {
             }                 
         }
     }
-    if ($igeny.Worksheet.Cells($limit, 2 + $yesterday.Day).Value2 -ne $total) {
-        $Map
-        Write-Output "Valami nem jó, nem egyezik az elszámolásba beírt órák száma az igénnyel"         
+    if ($igeny.Worksheet.Cells($limit, 2 + $yesterday.Day).Value2 -ne $total) {        
         $igeny.Application.visible=$true
-        Show-ErrorMessage -Message "$total Valami nem jó, nem egyezik az elszámolásba beírt órák száma az igénnyel. `nKérlek nézd át!"
+        Write-Log -Message "$total Valami nem jó, nem egyezik az elszámolásba beírt órák száma az igénnyel. `nKérlek nézd át!" -Level "ERROR"           
+        #Show-ErrorMessage -Message "$total Valami nem jó, nem egyezik az elszámolásba beírt órák száma az igénnyel. `nKérlek nézd át!"
         exit
+    }
+    else {
+        Write-Log -Message "Az igényeket sikeresen beolvastam!"
     }
     $igeny.Workbook.close($false)
 }
@@ -203,8 +210,8 @@ function open-StudentWorkReportFurdo {
         "Öltöző szolgálat" = @($empty;$empty)
         Gyermekmegőrző = @($empty)
         "Pénztáros" = @($empty;$empty)
-        Recepció = @($empty)
-    }
+        Recepció = @($empty)}
+        Write-Log -Message "Alapértelmezett igények használata" -Level "WARNING"
     } else {
         $Igeny = [ordered]@{}
         Get-Igenyek -Muszakok $Igeny -UszomesterIgenyPath $PathFU -FrontOfficeIgenyPath $PathFP
@@ -215,9 +222,10 @@ function open-StudentWorkReportFurdo {
         $furdosablon = Create-Template $igeny $fillCompletely $("Napi diákmunka elszámolás " + $yesterday.ToString("yyyy. MMMM dd."))
         if (-Not (Test-Path $savaAsFurdo)) {
             $furdosablon.Workbook.SaveAs($savaAsFurdo,[Type]::Missing, [Type]::Missing, [Type]::Missing, [Type]::Missing, [Type]::Missing, [Type]::Missing, [Type]::Missing, $true)
+            Write-Log -Message "Az elszámolás elmentve: $savaAsFurdo"
         }
         $furdosablon.Application.visible=$true
-        #Set-ItemProperty -Path HKCU:\Software\Script -Name YesterdaysWorkingHours -value $Today.Day
+        Set-ItemProperty -Path HKCU:\Software\Script -Name YesterdaysWorkingHours -value $Today.Day
     }
 }
 
@@ -255,8 +263,8 @@ function open-StudentWorkReportStrand {
             "Öltöző női" = @($Empty)
             "Öltöző férfi" = @($Empty)
             Kisegítő = @($Empty)
-            Pénztáros = @($Empty)
-        }
+            Pénztáros = @($Empty)}
+            Write-Log -Message "Alapértelmezett igények használata" -Level "WARNING"
     } else {
         $Igeny = [ordered]@{}
         Get-Igenyek -Muszakok $Igeny -UszomesterIgenyPath $PathSU -FrontOfficeIgenyPath $PathSP
@@ -268,6 +276,7 @@ function open-StudentWorkReportStrand {
         $strandsablon = Create-Template $igeny $fillCompletely $("Napi diákmunka elszámolás - STRAND - " + $yesterday.ToString("yyyy. MMMM dd."))
         if (-Not (Test-Path $saveAsStrand)) {
             $strandsablon.Workbook.SaveAs($saveAsStrand,[Type]::Missing, [Type]::Missing, [Type]::Missing, [Type]::Missing, [Type]::Missing, [Type]::Missing, [Type]::Missing, $true)
+            Write-Log -Message "Az elszámolás elmentve: $savaAsFurdo"
         }
         $strandsablon.Application.visible = $true
     }

@@ -15,6 +15,8 @@
     along with this program. If not, see <https://www.gnu.org/licenses/>.  
 #>
 
+Import-Module (Join-Path -Path $PSScriptRoot -ChildPath '..\Log.psm1')
+
 [System.Reflection.Assembly]::LoadFrom([System.Environment]::GetEnvironmentVariable("OfficeAssemblies_Word", [System.EnvironmentVariableTarget]::User)) 
 
 # Function to configure the printer
@@ -33,7 +35,19 @@ function Open-WordDocument {
     )
     $Word = New-Object -ComObject Word.Application
     $Word.Visible = $false
-    $Document = $Word.Documents.Open($FilePath)
+    try {
+        $Document = $Word.Documents.Open($FilePath)
+        if ($Document) {
+            Write-Log -Message "Document opened successfully: $FilePath"
+        } else {
+            throw
+        }
+
+    } catch {
+        Write-Error "Failed to open document: $FilePath" -Level "ERROR"
+        return $null
+    }
+    
     return @{
         Word = $Word
         Document = $Document
@@ -63,6 +77,7 @@ function Print-Document {
         [ref]$PageRange,
         [Type]::Missing
     )
+     Write-Log -Message "Printing $PageRange pages of $($Document.Name) on $PrinterName"
 }
 
 # Function to clean up Word COM objects

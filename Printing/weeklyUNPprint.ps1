@@ -15,6 +15,7 @@
     along with this program. If not, see <https://www.gnu.org/licenses/>.  
 #>
 
+Import-Module (Join-Path -Path $PSScriptRoot -ChildPath '..\Log.psm1')
 Import-Module "$PSScriptRoot\TestSchoolday.psm1"
 
 # Function to calculate the date of the next Monday
@@ -36,7 +37,18 @@ function Process-Document {
     )
 
     # Open document
-    $Document = $WordApp.Value.Documents.Open($Filename)
+    try {
+        $Document = $WordApp.Value.Documents.Open($Filename)
+        if ($Document) {
+            Write-Log -Message "Opened document: $Filename"
+        } else {
+            throw
+        }
+    }
+    catch {
+        Write-Log -Message "Failed to open document: $Filename" -Level "ERROR"
+        return $false
+    }       
 
     # Set find and replace parameters
     $FindText = $FindDate.ToString("MMMM dd.")
@@ -50,17 +62,21 @@ function Process-Document {
 
     # Perform find and replace
     if (!$Document.Content.Find.Execute($FindText, $MatchCase, $MatchWholeWord, $MatchWildcards, $null, $null, $Forward, $Wrap, $null, $ReplaceText, $Replace)) {
-        Write-Output "Text not found: $FindText"
+        Write-Log -Message "Text not found: $FindText" -Level "ERROR"
         $Document.Close(-1)
         return $false
+    } else {
+        Write-Log -Message "Replaced '$FindText' with '$ReplaceText' in document: $Filename"
     }
 
     # Save the document
     $Document.Save()
+    Write-Log -Message "Saved document: $Filename"
 
     # Handle holiday-specific printing logic
     if (Test-Schoolday -date $ReplaceDate) {
         $Document.PrintOut()
+        Write-Log -Message "Printed document: $Filename"
     }
 
     # Close the document

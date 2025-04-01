@@ -15,6 +15,7 @@
     along with this program. If not, see <https://www.gnu.org/licenses/>.  
 #>
 
+Import-Module $PSScriptRoot\log.psm1
 [System.Reflection.Assembly]::LoadFrom([System.Environment]::GetEnvironmentVariable("OfficeAssemblies_Excel", [System.EnvironmentVariableTarget]::User)) 
 
 function Get-Receptionists {
@@ -28,7 +29,7 @@ function Get-Receptionists {
     $pattern = '^(' + [regex]::escape($year) + ').*(' + [regex]::escape($monthName) + '|' + (Get-Culture).DateTimeFormat.GetMonthName($today.Month) + ').*(azd|ront).*xlsx$'
     $items = Get-ChildItem $([System.Environment]::GetFolderPath("Desktop")) | Where-Object { $_.Name.Normalize() -match ($pattern) } | Sort-Object Name -Descending | Select-Object -First 1
     if ($items.Count -eq 0) {
-        Write-Error "No matching files found."
+        Write-Log -Message "No matching files found for front office schedule." -Level "ERROR"
         return
     }
 
@@ -36,6 +37,7 @@ function Get-Receptionists {
     $excel = New-Object -ComObject Excel.Application
     $excel.Visible = $false
     $workbook = $excel.Workbooks.Open($filePath)
+    Write-Log -Message "Opened file: $filePath"
     $worksheet = $workbook.Sheets.Item(1)
 
     # Initialize an empty array
@@ -72,7 +74,7 @@ function Get-Shift {
             Shift = $worksheet.Cells($found.Row, 3 + $date.Day).Text
         }
     } else {
-        Write-Error "$name not found in the worksheet."
+        Write-Log "$name not found in the worksheet." -Level "ERROR"
         return $null
     }
 }
@@ -86,6 +88,10 @@ function Get-ShiftManager
     $monthName = (Get-Culture).TextInfo.ToTitleCase((Get-Culture).DateTimeFormat.GetMonthName($today.Month))
     $pattern = '^(' + [regex]::escape($today.Year) +').*(' + [regex]::escape($monthName) + '|' + (Get-Culture).DateTimeFormat.GetMonthName($today.Month) +')(?!.*(azd|ront|beosztás|havi)).*xlsx$'
     $items = Get-ChildItem $([System.Environment]::GetFolderPath("Desktop")) | Where-Object { $_.Name.Normalize() -match ($pattern) } | Sort-Object Name -Descending | Select-Object -First 1
+    if ($items.Count -eq 0) {
+        Write-Log -Message "No matching files found for staff schedule." -Level "ERROR"
+        return
+    }
     $filePath=$items.FullName
     $ExcelBack = New-Object -ComObject Excel.Application
     $ExcelBack.visible=$false
@@ -117,7 +123,7 @@ function Get-Name {
             Shift = $($workSheet.Cells($found.Row(), $($ColumnOffset + $date.Day)).Text)
         }
     } else {
-        Write-Error "$ShiftID not found in the worksheet."
+        Write-Log "$ShiftID not found in the worksheet." -Level "ERROR"
         return [PSCustomObject]@{
             Name  = $null
             Shift = $ShiftID
