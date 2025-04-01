@@ -18,15 +18,23 @@
 Import-Module "$PSScriptRoot\MonthlyCommutingAllowancePrint.psm1"
 Import-Module "$PSScriptRoot\monthlyPrintAttendceSheetCollegues.psm1"
 Import-Module "$PSScriptRoot\monthlyPrintScheduleRequest.psm1"
+Import-Module (Join-Path -Path $PSScriptRoot -ChildPath '..\Log.psm1')
 
 $path = Get-SheetPath
 
+Write-Log -Message "Printing scedule requests for the front office"
 Print-RequestFrontOffice
+Write-Log -Message "Printing attendance sheets for the front office"
 Print-AttandanceSheetFrontOffice -OpenFile $path
 
+Write-Log -Message "Printing scedule requests for the staff"
 Print-RequestUszomester
+Write-Log -Message "Printing commuting allowance"
 Print-CommutingAllowance
+Write-Log -Message "Printing attendance sheets for the staff"
 Print-AttandanceSheetUszomester -OpenFile $path
 
+Write-Log -Message "Printing attendance sheets for the genitors"
 Print-AttandanceSheetKarbantarto -OpenFile $path
+Write-Log -Message "Printing attendance sheets for the pool technicians"
 Print-AttandanceSheetGepesz -OpenFile $path
