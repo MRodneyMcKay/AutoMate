@@ -15,10 +15,7 @@
     along with this program. If not, see <https://www.gnu.org/licenses/>.  
 #>
 
-# Load the required Word Interop assembly
-function Load-WordInterop {
-    Add-Type -Path "C:\Windows\assembly\GAC_MSIL\Microsoft.Office.Interop.Word\15.0.0.0__71e9bce111e9429c\Microsoft.Office.Interop.Word.dll"
-}
+Import-Module (Join-Path -Path $PSScriptRoot -ChildPath '..\Log.psm1')
 
 # Get the default printer
 function Get-DefaultPrinter {
@@ -34,8 +31,17 @@ function Perform-MailMerge {
 
     $Word = New-Object -ComObject Word.Application
     $Word.Visible = $false
-
-    $doc = $Word.Documents.Open($DocumentPath)
+    try {
+        $doc = $Word.Documents.Open($DocumentPath)
+        if ($doc) {
+            Write-Log -Message "Document opened successfully: $DocumentPath" -Level "INFO"
+        } else {
+            throw
+        }
+    } catch {
+        Write-Log -Message "Failed to open document: $DocumentPath" -Level "ERROR"
+        return
+    }
     $mailMerge = $doc.MailMerge
     $mailMerge.OpenDataSource($DataSourcePath)
     $mailMerge.Destination = [Microsoft.Office.Interop.Word.WdMailMergeDestination]::wdSendToNewDocument
@@ -80,6 +86,7 @@ function Print-Document {
     $Item = 0
     $Copies = 1
     $Document.PrintOut([ref]$BackGround, [Type]::Missing, [ref]$Range, [Type]::Missing, [Type]::Missing, [Type]::Missing, [ref]$Item, [ref]$Copies, [ref]$PageRange, [Type]::Missing)
+    Write-Log -Message "Printing $PageRange pages of $($Document.Name) on $PrinterName"
 
     # Restore printer to two-sided printing
     Set-PrintConfiguration -PrinterName $PrinterName -DuplexingMode TwoSidedLongEdge
@@ -103,7 +110,7 @@ function Cleanup-WordObjects {
 }
 
 # Main script logic
-Load-WordInterop
+[System.Reflection.Assembly]::LoadFrom([System.Environment]::GetEnvironmentVariable("OfficeAssemblies_Word", [System.EnvironmentVariableTarget]::User)) 
 
 $defaultPrinter = Get-DefaultPrinter
 $documentPath = "C:\Users\Hirossport\Hiros Sport Nonprofit Kft\Hiros-sport - Dokumentumok\Furdo\Recepcio\Nyomtatni\TIG jelenléti ív_2025.docx"

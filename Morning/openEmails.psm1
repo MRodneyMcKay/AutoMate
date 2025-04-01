@@ -15,6 +15,9 @@
     along with this program. If not, see <https://www.gnu.org/licenses/>.  
 #>
 
+Import-Module (Join-Path -Path $PSScriptRoot -ChildPath '..\Log.psm1')
+Import-Module "$PSScriptRoot\createTemplate.psm1"
+[System.Reflection.Assembly]::LoadFrom([System.Environment]::GetEnvironmentVariable("OfficeAssemblies_Outlook", [System.EnvironmentVariableTarget]::User)) 
 function Open-OutlookFolder {
     param (
         [object]$Outlook,
@@ -30,13 +33,19 @@ function Open-EmailTemplate {
     param (
         [object]$Outlook,
         [string]$TemplatePath,
-        [hashtable]$Replacements
+        [hashtable]$Replacements,
+        [string]$subject
     )
     $msg = $Outlook.CreateItemFromTemplate($TemplatePath)
     foreach ($key in $Replacements.Keys) {
         $msg.HTMLBody = $msg.HTMLBody.Replace($key, $Replacements[$key])
     }
     $inspector = $msg.GetInspector()
+    if ($inspector) {
+        Write-Log -Message "$subject email opened."
+    } else {
+        Write-Log -Message "$subject could not be opened." -Level "ERROR"
+    }
     $inspector.Display()
 }
 
@@ -55,15 +64,16 @@ function Open-Emails {
     $bevletTemplate = "$emails\BEVLÉT.oft"
     Open-EmailTemplate -Outlook $outlook -TemplatePath $bevletTemplate -Replacements @{
         "2023.??.??." = ($Today.AddDays(-1)).ToString("yyyy.MM.dd.")
-    }
+    } -subject "BEVLÉT"
+    
 
     # Open Bérleteken fennmaradt alkalmak email
     $berletTemplate = "$emails\Bérleteken fennmaradt alkalmak.oft"
     Open-EmailTemplate -Outlook $outlook -TemplatePath $berletTemplate -Replacements @{
         "2023.??.??." = ($Today.ToString("yyyy.MM.dd.") + " nyitás")
-    }
+    } -subject "Bérletes"
 
     # Open DIÁKOK email
     $diakokTemplate = "$emails\DIÁKOK.oft"
-    Open-EmailTemplate -Outlook $outlook -TemplatePath $diakokTemplate -Replacements @{}
+    Open-EmailTemplate -Outlook $outlook -TemplatePath $diakokTemplate -Replacements @{} -subject "Diákok"
 }

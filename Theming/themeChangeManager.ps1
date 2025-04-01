@@ -15,6 +15,7 @@
     along with this program. If not, see <https://www.gnu.org/licenses/>.  
 #>
 
+Import-Module (Join-Path -Path $PSScriptRoot -ChildPath '..\Log.psm1')
 Import-Module (Join-Path -Path $PSScriptRoot -ChildPath '..\RosterInformation.psm1')
 Import-Module $PSScriptRoot\themes.psm1
 
@@ -39,6 +40,7 @@ function ProcessShift {
     [System.Environment]::SetEnvironmentVariable("ApplyTheme", $applyThemeToggle, [System.EnvironmentVariableTarget]::User)
     $triggers = New-ScheduledTaskTrigger -At $TriggerTime -Once
     Set-ScheduledTask -TaskName "ToggleTheme" -Trigger $triggers -Verbose
+    Write-Log -Message "Scheduled task created at $TriggerTime"
 }
 
 # Define task and action mappings for shifts

@@ -15,7 +15,7 @@
     along with this program. If not, see <https://www.gnu.org/licenses/>.  
 #>
 
-# Define reusable functions for common tasks
+Import-Module $PSScriptRoot\log.psm1
 
 # Function to create a scheduled task
 function New-ScheduledTask {
@@ -28,14 +28,17 @@ function New-ScheduledTask {
     )
     $pwshPath = (Get-Command pwsh).Source
     if (-not (Test-Path $pwshPath)) {
-        throw "PowerShell executable not found."
+        Write-Log -Message "PowerShell executable not found." -Level "ERROR"
     }
     $action = New-ScheduledTaskAction -Execute $pwshPath -Argument "-WindowStyle hidden -ExecutionPolicy Bypass -File `"$ScriptPath`""
     if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {
         Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false
     }
     Register-ScheduledTask -TaskName $TaskName -Principal $Principal -Action $action -Description $Description
+    Write-Log -Message "Scheduled task '$TaskName' created."
     Set-ScheduledTask -TaskName $TaskName -Trigger $triggers
+    Write-Log -Message "Scheduled task '$TaskName' triggers set."
+
 }
 
 # Function to create registry keys
@@ -48,6 +51,7 @@ function New-RegistryKeys {
     foreach ($key in $Properties.Keys) {
         Set-ItemProperty -Path $RegistryPath -Name $key -Value $Properties[$key]
     }
+    Write-Log -Message "Registry keys created at '$RegistryPath'."
 }
 
 # Function to create a PowerShell script on the desktop
@@ -59,6 +63,7 @@ function Create-ScriptOnDesktop {
     $desktopPath = [Environment]::GetFolderPath("Desktop")
     $scriptPath = Join-Path -Path $desktopPath -ChildPath $FileName
     Set-Content -Path $scriptPath -Value $Content
+    Write-Log -Message "Script '$FileName' created on desktop."
 }
 
 # Define the principal for scheduled tasks
@@ -150,3 +155,14 @@ Import-Module "$($modulePathTicket)"
 New-Ticket
 "@
 Create-ScriptOnDesktop -FileName "Hibajegy.ps1" -Content $newScriptContent
+
+#saving office interop dll assembly paths to environment variables
+# Define Office Interop assemblies
+$assemblies = @("Excel", "Outlook", "Word")
+
+# Iterate over each assembly, load it, get the location, and store it in environment variables
+foreach ($assembly in $assemblies) {
+    $dll_path = powershell.exe -Command "[System.Reflection.Assembly]::LoadWithPartialName('Microsoft.Office.Interop.$assembly') | Select-Object -ExpandProperty Location | Out-String"
+    [System.Environment]::SetEnvironmentVariable("OfficeAssemblies_$assembly", $dll_path.Trim(), [System.EnvironmentVariableTarget]::User)
+    Write-Log -Message "Office Interop assembly '$assembly' path saved to environment variable."
+}

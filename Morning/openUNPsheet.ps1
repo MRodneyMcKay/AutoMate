@@ -15,7 +15,10 @@
     along with this program. If not, see <https://www.gnu.org/licenses/>.  
 #>
 
+[System.Reflection.Assembly]::LoadFrom([System.Environment]::GetEnvironmentVariable("OfficeAssemblies_Word", [System.EnvironmentVariableTarget]::User)) 
 Import-Module (Join-Path -Path $PSScriptRoot -ChildPath '..\Printing\TestSchoolday.psm1')
+Import-Module (Join-Path -Path $PSScriptRoot -ChildPath '..\Log.psm1')
+
 # Get the current day of the week
 $today = (Get-Date)
 
@@ -34,11 +37,29 @@ if (Test-Schoolday) {
     $Word.visible=$true
     if (-Not (Test-Path $SaveAsDir)) {
         New-Item -Path $SaveAsDir -ItemType Directory -Force
+        Write-Log -Message "Directory created: $SaveAsDir"
     }
     if (-Not (Test-Path $SaveAs)) {
-        $Document=$Word.documents.open($Filename)
-        $Document.SaveAs2($SaveAs)
+        try {
+            $Document=$Word.documents.open($Filename)
+            if ($Document) {
+                Write-Log -Message  "$Filename opened successfully."
+                $Document.SaveAs2($SaveAs)
+                Write-Log -Message "Document created: $SaveAs"
+            }
+            else {
+                throw
+            }               
+        }
+        catch {
+            Write-Log -Message "Error opening document: $Filename" -Level "ERROR"
+        }
+        
     } else{
         $Document=$Word.documents.open($SaveAs)
+        Write-Log -Message "Document opened: $SaveAs"
     }
 }
+ else {
+     Write-Log -Message "Iskola szünet van"
+ }

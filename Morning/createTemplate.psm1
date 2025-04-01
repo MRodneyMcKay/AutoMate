@@ -15,7 +15,7 @@
     along with this program. If not, see <https://www.gnu.org/licenses/>.  
 #>
 
-[System.Reflection.Assembly]::LoadFrom("C:\Windows\assembly\GAC_MSIL\Microsoft.Office.Interop.Excel\15.0.0.0__71e9bce111e9429c\Microsoft.Office.Interop.Excel.dll ") 
+[System.Reflection.Assembly]::LoadFrom([System.Environment]::GetEnvironmentVariable("OfficeAssemblies_Excel", [System.EnvironmentVariableTarget]::User)) 
 
 function RGB($r, $g, $b) { $r + ($g * 256) + ($b * 256 * 256) }
 
