@@ -17,7 +17,7 @@
 
 [System.Reflection.Assembly]::LoadFrom("C:\Windows\Microsoft.NET\Framework64\v4.0.30319\System.Windows.Forms.dll")
 Add-Type -AssemblyName PresentationFramework
-
+. "$PSScriptRoot\asciiart.ps1"
 function Show-ErrorMessage {
     param (
         [string]$Message,
@@ -39,30 +39,11 @@ function Write-Log {
         [string]$Level = "INFO"
     )
 
-    #getverion tag
-    $ver = git describe --tags --abbrev=0 2>$null
-
     # Create a timestamp
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
 
     # Create ASCII Art for "AutoMate"
-    $spaces = "                                                                                            "
-    $asciiArt = @"
-
-    o                        o                    o          o                 o                  
-    <|>                      <|>                  <|\        /|>               <|>                 
-    / \                      < >                  / \\o    o// \               < >                 
-  o/   \o        o       o    |        o__ __o    \o/ v\  /v \o/     o__ __o/   |        o__  __o  
- <|__ __|>      <|>     <|>   o__/_   /v     v\    |   <\/>   |     /v     |    o__/_   /v      |> 
- /       \      < >     < >   |      />       <\  / \        / \   />     / \   |      />      //  
-o/         \o     |       |    |      \         /  \o/        \o/   \      \o/   |      \o    o/    
-/v           v\    o       o    o       o       o    |          |     o      |    o       v\  /v __o 
-/>             <\   <\__ __/>    <\__    <\__ __/>   / \        / \    <\__  / \   <\__     <\/> __/> 
-                                                                                                   
-$spaces Version: $($ver ? "$ver" : "Unknown")                                                                                                   
-                                                                                                   
-
-"@
+    $asciiArt = Get-AsciiArt
     $date =Get-Date -Format "MM-dd"
     $logFile = Join-Path -Path $PSScriptRoot\logs -ChildPath "$date.log"
     if (-Not (Test-Path $PSScriptRoot\logs)) {
