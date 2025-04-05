@@ -15,23 +15,6 @@
     along with this program. If not, see <https://www.gnu.org/licenses/>.  
 #>
 
-[System.Reflection.Assembly]::LoadFrom("C:\Windows\Microsoft.NET\Framework64\v4.0.30319\System.Windows.Forms.dll")
-Add-Type -AssemblyName PresentationFramework
-
-function Show-ErrorMessage {
-    param (
-        [string]$Message,
-        [string]$Title = "Hiba"
-    )
-    [System.Windows.Forms.MessageBox]::Show(
-        $(New-Object -TypeName System.Windows.Forms.Form -Property @{ TopMost = $true }),
-        $Message,
-        $Title,
-        [System.Windows.Forms.MessageBoxButtons]::OK,
-        [System.Windows.MessageBoxImage]::Error
-    ) | Out-Null
-}
-
 function Write-Log {
     param (
         [string]$Message,
