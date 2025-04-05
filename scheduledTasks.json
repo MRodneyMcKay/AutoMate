@@ -1,18 +1,18 @@
 [
     {
       "TaskName": "test_Open UNP sheet",
-      "ScriptPath": "$PSScriptRoot\\Morning\\openUNPsheet.ps1",
+      "ScriptPath": "$PSScriptRoot\\Scripts\\openUNPSheet.ps1",
       "Triggers": [
         {
           "TriggerType": "Daily",
           "Time": "07:30"
         }
       ],
-      "Description": "Runs the Theme Change Manager script at user login."
+      "Description": "Opens the UNP sheet for today."
     },
     {
       "TaskName": "test_Theme Change Manager",
-      "ScriptPath": "$PSScriptRoot\\Theming\\themeChangeManager.ps1",
+      "ScriptPath": "$PSScriptRoot\\Scripts\\themeChangeManager.ps1",
       "Triggers": [
         {
           "TriggerType": "AtLogOn"
@@ -20,9 +20,10 @@
       ],
       "Description": "Runs the Theme Change Manager script at user login."
     },
+    
     {
       "TaskName": "test_Monthly print TIG",
-      "ScriptPath": "$PSScriptRoot\\Printing\\MonthlyTIGprint.ps1",
+      "ScriptPath": "$PSScriptRoot\\Scripts\\MonthlyTIGprint.ps1",
       "Triggers": [
         {
           "TriggerType": "Once",
@@ -61,7 +62,7 @@
     },
     {
       "TaskName": "test_PrintWeeklyUNP",
-      "ScriptPath": "$PSScriptRoot\\Printing\\weeklyUNPprint.ps1",
+      "ScriptPath": "$PSScriptRoot\\Scripts\\weeklyUNPprint.ps1",
       "Triggers": [
         {
           "TriggerType": "Weekly",
@@ -73,7 +74,7 @@
     },
     {
       "TaskName": "test_Morning routine",
-      "ScriptPath": "$PSScriptRoot\\Morning\\morningscript.ps1",
+      "ScriptPath": "$PSScriptRoot\\Scripts\\morningscript.ps1",
       "Triggers": [
         {
           "TriggerType": "AtLogOn"
@@ -83,7 +84,7 @@
     },
     {
       "TaskName": "test_PopUpMuszi",
-      "ScriptPath": "$PSScriptRoot\\popUpShiftManager.ps1",
+      "ScriptPath": "$PSScriptRoot\\Scripts\\popUpShiftManager.ps1",
       "Triggers": [
         {
           "TriggerType": "Daily",
@@ -101,9 +102,8 @@
     },
     {
       "TaskName": "test_ToggleTheme",
-      "ScriptPath": "$PSScriptRoot\\Theming\\applyTheme.ps1",
+      "ScriptPath": "$PSScriptRoot\\Scripts\\applyTheme.ps1",
       "Triggers": [],
       "Description": "Runs the ToggleTheme script manually or when triggered by other means."
     }
   ]
-  
