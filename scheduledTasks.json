@@ -1,0 +1,109 @@
+[
+    {
+      "TaskName": "test_Open UNP sheet",
+      "ScriptPath": "$PSScriptRoot\\Morning\\openUNPsheet.ps1",
+      "Triggers": [
+        {
+          "TriggerType": "Daily",
+          "Time": "07:30"
+        }
+      ],
+      "Description": "Runs the Theme Change Manager script at user login."
+    },
+    {
+      "TaskName": "test_Theme Change Manager",
+      "ScriptPath": "$PSScriptRoot\\Theming\\themeChangeManager.ps1",
+      "Triggers": [
+        {
+          "TriggerType": "AtLogOn"
+        }
+      ],
+      "Description": "Runs the Theme Change Manager script at user login."
+    },
+    {
+      "TaskName": "test_Monthly print TIG",
+      "ScriptPath": "$PSScriptRoot\\Printing\\MonthlyTIGprint.ps1",
+      "Triggers": [
+        {
+          "TriggerType": "Once",
+          "DateTime": "2025-03-31 15:30:00"
+        },
+        {
+          "TriggerType": "Once",
+          "DateTime": "2025-04-30 15:30:00"
+        },
+        {
+          "TriggerType": "Once",
+          "DateTime": "2025-05-31 15:30:00"
+        },
+        {
+          "TriggerType": "Once",
+          "DateTime": "2025-06-30 15:30:00"
+        },
+        {
+          "TriggerType": "Once",
+          "DateTime": "2025-08-31 15:30:00"
+        },
+        {
+          "TriggerType": "Once",
+          "DateTime": "2025-09-30 15:30:00"
+        },
+        {
+          "TriggerType": "Once",
+          "DateTime": "2025-10-31 15:30:00"
+        },
+        {
+          "TriggerType": "Once",
+          "DateTime": "2025-11-30 15:30:00"
+        }
+      ],
+      "Description": "Runs the Monthly TIG print script."
+    },
+    {
+      "TaskName": "test_PrintWeeklyUNP",
+      "ScriptPath": "$PSScriptRoot\\Printing\\weeklyUNPprint.ps1",
+      "Triggers": [
+        {
+          "TriggerType": "Weekly",
+          "DaysOfWeek": "Friday",
+          "Time": "15:00"
+        }
+      ],
+      "Description": "Runs the printweeklyUNP script, which saves and prints sheets for UNP."
+    },
+    {
+      "TaskName": "test_Morning routine",
+      "ScriptPath": "$PSScriptRoot\\Morning\\morningscript.ps1",
+      "Triggers": [
+        {
+          "TriggerType": "AtLogOn"
+        }
+      ],
+      "Description": "Runs the Morning routine."
+    },
+    {
+      "TaskName": "test_PopUpMuszi",
+      "ScriptPath": "$PSScriptRoot\\popUpShiftManager.ps1",
+      "Triggers": [
+        {
+          "TriggerType": "Daily",
+          "Time": "12:58"
+        },
+        {
+          "TriggerType": "Daily",
+          "Time": "13:00"
+        },
+        {
+          "TriggerType": "AtLogOn"
+        }
+      ],
+      "Description": "Runs the PopUpMuszi script manually or when triggered by other means."
+    },
+    {
+      "TaskName": "test_ToggleTheme",
+      "ScriptPath": "$PSScriptRoot\\Theming\\applyTheme.ps1",
+      "Triggers": [],
+      "Description": "Runs the ToggleTheme script manually or when triggered by other means."
+    }
+  ]
+  
