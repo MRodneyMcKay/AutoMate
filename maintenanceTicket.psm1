@@ -19,8 +19,11 @@ Import-Module $PSScriptRoot\RosterInformation.psm1
 
 function New-Ticket {
     
-$shiftManager = (Get-ShiftManager)[(Get-Date).TimeOfDay -lt (New-TimeSpan -Hours 12 -Minutes 55) ? 0 : 1].Name
-
+try {
+    $shiftManager =  Get-ShiftManager
+} catch {
+    $shiftManager = ""
+}
 
 $today = Get-Date
 $Excel = New-Object -ComObject Excel.Application

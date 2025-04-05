@@ -21,20 +21,6 @@ Add-Type -AssemblyName PresentationFramework
 [System.Reflection.Assembly]::LoadFrom("C:\Windows\Microsoft.NET\Framework64\v4.0.30319\System.Windows.Forms.dll")
 [System.Reflection.Assembly]::LoadFrom([System.Environment]::GetEnvironmentVariable("OfficeAssemblies_Excel", [System.EnvironmentVariableTarget]::User)) 
 
-function Show-ErrorMessage {
-    param (
-        [string]$Message,
-        [string]$Title = "Hiba"
-    )
-    [System.Windows.Forms.MessageBox]::Show(
-        $(New-Object -TypeName System.Windows.Forms.Form -Property @{ TopMost = $true }),
-        $Message,
-        $Title,
-        [System.Windows.Forms.MessageBoxButtons]::OK,
-        [System.Windows.MessageBoxImage]::Error
-    ) | Out-Null
-}
-
 function Find-File {
     param (
         [string]$Pattern,
@@ -50,7 +36,6 @@ function Find-File {
         return $items.FullName
     } elseif ($PromptIfNotFound) {
         Write-Log -Message "Nem találom a következőt: $PromptTitle" -Level "ERROR"
-        #Show-ErrorMessage -Message "Nem találom a következőt: $PromptTitle"
 
         $OpenFileDialog = New-Object System.Windows.Forms.OpenFileDialog
         $OpenFileDialog.initialDirectory = $Directory
@@ -62,7 +47,7 @@ function Find-File {
         return $items.FullName
     }
     Write-Log -Message "Nem találom a következőt: $PromptTitle" -Level "WARNING"
-    return ""
+    throw [System.IO.IOException]::new("Nem találom a következőt: $PromptTitle") 
 }
 
 function get-Hours {
@@ -102,7 +87,7 @@ function get-Hours {
         get-Hours(([regex]::Matches($definition, '(?<=\().+?(?=\))' ).Value))
     }
     else {
-        throw "Rossz formátum"
+        throw [System.ArgumentException]::new("Rossz formátum a műszak leírásának: $definition")
     }
      <#
         .SYNOPSIS
@@ -136,7 +121,7 @@ function get-IgenyekHelper {
             catch {
                 $igeny.Workbook.close($false)
                 [System.Runtime.Interopservices.Marshal]::ReleaseComObject($igeny.Application)
-                exit
+                throw
             }
             for ($j = 0; $j -lt $hours / $pair.hours; $j++) {
                 $Map[$role]+=,$pair
@@ -147,7 +132,6 @@ function get-IgenyekHelper {
     if ($igeny.Worksheet.Cells($limit, 2 + $yesterday.Day).Value2 -ne $total) {        
         $igeny.Application.visible=$true
         Write-Log -Message "$total Valami nem jó, nem egyezik az elszámolásba beírt órák száma az igénnyel. `nKérlek nézd át!" -Level "ERROR"           
-        #Show-ErrorMessage -Message "$total Valami nem jó, nem egyezik az elszámolásba beírt órák száma az igénnyel. `nKérlek nézd át!"
         exit
     }
     else {
@@ -197,36 +181,32 @@ function open-StudentWorkReportFurdo {
     $igeny = [ordered]@{}
 
     $patternfu = '^F.*(' + [regex]::escape($honap) + '|' + (Get-Culture).DateTimeFormat.GetMonthName($yesterday.Month) +').*.*ürdő.*\.xlsx$'
-    $PathFU = Find-File -Pattern $PatternFU -Pattern2 "^((?!Front).)*$" -PromptIfNotFound $FillCompletely -PromptTitle "Fürdő úszómester igényei"
-
     $patternfp =  '^F.*(' + [regex]::escape($honap) + '|' + (Get-Culture).DateTimeFormat.GetMonthName($yesterday.Month) +').*Fürdő.*(azd|ront).*xlsx$'
-    $PathFP = Find-File -Pattern $patternfp -PromptIfNotFound $FillCompletely -PromptTitle "Fürdő front office igényei"
-
-    if (-not $PathFU -or -not $PathFP) {
-        $Empty = @{ definition = ""; hours = "" }
-        $igeny = [ordered] @{"Úszómester" = @($empty;$empty)
-        "Csúszda" = @($empty)
-        "Gyógymedence`nfelügyelet" = @($empty;$empty)
-        "Öltöző szolgálat" = @($empty;$empty)
-        Gyermekmegőrző = @($empty)
-        "Pénztáros" = @($empty;$empty)
-        Recepció = @($empty)}
-        Write-Log -Message "Alapértelmezett igények használata" -Level "WARNING"
-    } else {
-        $Igeny = [ordered]@{}
+    $Empty = @{ definition = ""; hours = "" }
+    $default = [ordered] @{"Úszómester" = @($empty;$empty)
+    "Csúszda" = @($empty)
+    "Gyógymedence`nfelügyelet" = @($empty;$empty)
+    "Öltöző szolgálat" = @($empty;$empty)
+    Gyermekmegőrző = @($empty)
+    "Pénztáros" = @($empty;$empty)
+    Recepció = @($empty)}
+    try {
+        $PathFU = Find-File -Pattern $PatternFU -Pattern2 "^((?!Front).)*$" -PromptIfNotFound $FillCompletely -PromptTitle "Fürdő úszómester igényei"
+        $PathFP = Find-File -Pattern $patternfp -PromptIfNotFound $FillCompletely -PromptTitle "Fürdő front office igényei"
         Get-Igenyek -Muszakok $Igeny -UszomesterIgenyPath $PathFU -FrontOfficeIgenyPath $PathFP
-    }
-    
-    
-    if (0 -ne $igeny.Count) {
+    } catch {        
+        $igeny = $default
+        Write-Log -Message $_.Exception.Message -Level "WARNING"
+        Write-Log -Message "Alapértelmezett igények használata" -Level "WARNING"
+    } finally {
         $furdosablon = Create-Template $igeny $fillCompletely $("Napi diákmunka elszámolás " + $yesterday.ToString("yyyy. MMMM dd."))
         if (-Not (Test-Path $savaAsFurdo)) {
             $furdosablon.Workbook.SaveAs($savaAsFurdo,[Type]::Missing, [Type]::Missing, [Type]::Missing, [Type]::Missing, [Type]::Missing, [Type]::Missing, [Type]::Missing, $true)
             Write-Log -Message "Az elszámolás elmentve: $savaAsFurdo"
         }
         $furdosablon.Application.visible=$true
-        Set-ItemProperty -Path HKCU:\Software\Script -Name YesterdaysWorkingHours -value $Today.Day
     }
+    Set-ItemProperty -Path HKCU:\Software\Script -Name YesterdaysWorkingHours -value $Today.Day
 }
 
 function open-StudentWorkReportStrand {
@@ -248,37 +228,36 @@ function open-StudentWorkReportStrand {
 
     $igeny = [ordered]@{}
     $patternsu = '^F.*(' + [regex]::escape($honap) + '|' + [regex]::escape((Get-Culture).DateTimeFormat.GetMonthName($yesterday.Month)) +').*Strand.*\.xlsx$'
-    $PathSU = Find-File -Pattern $PatternSU  -Pattern2 "^((?!Front).)*$" -PromptIfNotFound $FillCompletely -PromptTitle "Strand úszómester igényei"
-    
     $patternsp = '^F.*(' + [regex]::escape($honap) + '|' + [regex]::escape((Get-Culture).DateTimeFormat.GetMonthName($yesterday.Month)) +').*Strand.*(azd|ront).*xlsx$'
-    $PathSP = Find-File -Pattern $PatternSP -PromptIfNotFound $FillCompletely -PromptTitle "Strand front office igényei"
-    
-    if (-not $PathSU -or -not $PathSP) {
-        $Empty = @{ definition = ""; hours = "" }
-        $Igeny = [ordered]@{
-            Úszómester = @($Empty; $Empty; $Empty)
-            Csúszda = @($Empty)
-            "Vízőr (pancsoló)" = @($Empty)
-            "Gyógymedence" = @($Empty)
-            "Öltöző női" = @($Empty)
-            "Öltöző férfi" = @($Empty)
-            Kisegítő = @($Empty)
-            Pénztáros = @($Empty)}
-            Write-Log -Message "Alapértelmezett igények használata" -Level "WARNING"
-    } else {
-        $Igeny = [ordered]@{}
+    $saveAsStrand= "$($saveAsDir)$($yesterday.ToString('yyyy.MM.dd.')) - STRAND.xlsx" 
+    $Empty = @{ definition = ""; hours = "" }
+    $default = [ordered]@{
+        Úszómester = @($Empty; $Empty; $Empty)
+        Csúszda = @($Empty)
+        "Vízőr (pancsoló)" = @($Empty)
+        "Gyógymedence" = @($Empty)
+        "Öltöző női" = @($Empty)
+        "Öltöző férfi" = @($Empty)
+        Kisegítő = @($Empty)
+        Pénztáros = @($Empty)}
+    try {
+        $PathSU = Find-File -Pattern $PatternSU  -Pattern2 "^((?!Front).)*$" -PromptIfNotFound $FillCompletely -PromptTitle "Strand úszómester igényei"
+        $PathSP = Find-File -Pattern $PatternSP -PromptIfNotFound $FillCompletely -PromptTitle "Strand front office igényei"
         Get-Igenyek -Muszakok $Igeny -UszomesterIgenyPath $PathSU -FrontOfficeIgenyPath $PathSP
-    }
-
-    $saveAsStrand= "$($saveAsDir)$($yesterday.ToString('yyyy.MM.dd.')) - STRAND.xlsx"  
-    
-    if (0 -ne $igeny.Count) {
-        $strandsablon = Create-Template $igeny $fillCompletely $("Napi diákmunka elszámolás - STRAND - " + $yesterday.ToString("yyyy. MMMM dd."))
-        if (-Not (Test-Path $saveAsStrand)) {
-            $strandsablon.Workbook.SaveAs($saveAsStrand,[Type]::Missing, [Type]::Missing, [Type]::Missing, [Type]::Missing, [Type]::Missing, [Type]::Missing, [Type]::Missing, $true)
-            Write-Log -Message "Az elszámolás elmentve: $savaAsFurdo"
+    } catch {        
+        $igeny = $default
+        Write-Log -Message $_.Exception.Message -Level "WARNING"
+        Write-Log -Message "Alapértelmezett igények használata" -Level "WARNING"
+    } finally {
+        if ($igeny.Count -ne 0) {
+            $strandsablon = Create-Template $igeny $fillCompletely $("Napi diákmunka elszámolás - STRAND - " + $yesterday.ToString("yyyy. MMMM dd."))
+            if (-Not (Test-Path $saveAsStrand)) {
+                $strandsablon.Workbook.SaveAs($saveAsStrand,[Type]::Missing, [Type]::Missing, [Type]::Missing, [Type]::Missing, [Type]::Missing, [Type]::Missing, [Type]::Missing, $true)
+                Write-Log -Message "Az elszámolás elmentve: $savaAsFurdo"
+            }
+            $strandsablon.Application.visible = $true
         }
-        $strandsablon.Application.visible = $true
+       
     }
     #Set-ItemProperty -Path HKCU:\Software\Script -Name YesterdaysWorkingHours -value $Today.Day
 }

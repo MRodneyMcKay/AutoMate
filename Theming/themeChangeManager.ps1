@@ -19,7 +19,12 @@ Import-Module (Join-Path -Path $PSScriptRoot -ChildPath '..\Log.psm1')
 Import-Module (Join-Path -Path $PSScriptRoot -ChildPath '..\RosterInformation.psm1')
 Import-Module $PSScriptRoot\themes.psm1
 
+try {
 $roster = Get-Receptionists
+} catch {
+    Set-Default
+    exit
+}
 $zsoltiToday = ($roster | Where-Object { $_.Name -eq 'Raduska Zsolt' }).Shift
 $nikiToday = ($roster | Where-Object { $_.Name -eq 'Konfár Nikolett' }).Shift
 # Get date and working states

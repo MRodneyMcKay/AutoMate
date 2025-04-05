@@ -29,10 +29,8 @@ function Get-Receptionists {
     $pattern = '^(' + [regex]::escape($year) + ').*(' + [regex]::escape($monthName) + '|' + (Get-Culture).DateTimeFormat.GetMonthName($today.Month) + ').*(azd|ront).*xlsx$'
     $items = Get-ChildItem $([System.Environment]::GetFolderPath("Desktop")) | Where-Object { $_.Name.Normalize() -match ($pattern) } | Sort-Object Name -Descending | Select-Object -First 1
     if ($items.Count -eq 0) {
-        Write-Log -Message "No matching files found for front office schedule." -Level "ERROR"
-        return
+        throw "Did not find front office schedule"
     }
-
     $filePath = $items.FullName
     $excel = New-Object -ComObject Excel.Application
     $excel.Visible = $false
@@ -47,7 +45,8 @@ function Get-Receptionists {
         $roster += Get-Shift $worksheet 'Konfár Nikolett' $today
         $roster += Get-Shift $worksheet 'Raduska Zsolt' $today
     } catch {
-        Write-Error "An error occurred: $_"
+        Write-Log $_.Exception.Message -Level "DEBUG"
+        throw
     } finally {
         $workbook.Close($false)
         [void][System.Runtime.InteropServices.Marshal]::ReleaseComObject([System.__ComObject]$workbook)
@@ -62,20 +61,20 @@ function Get-Receptionists {
 }
 
 function Get-Shift {
+    
     param (
         [object]$worksheet,
         [string]$name,
         [datetime]$date
     )
     $found = $worksheet.Cells.Find($name)
-    if ($found) {
-        return [PSCustomObject]@{
-            Name  = $name
-            Shift = $worksheet.Cells($found.Row, 3 + $date.Day).Text
-        }
-    } else {
-        Write-Log "$name not found in the worksheet." -Level "ERROR"
+    if ($null -eq $found) {
+        throw "$name not found in the worksheet."
         return $null
+    }
+    return [PSCustomObject]@{
+        Name  = $name
+        Shift = $worksheet.Cells($found.Row, 3 + $date.Day).Text
     }
 }
 
@@ -87,25 +86,31 @@ function Get-ShiftManager
     $today = Get-Date $now
     $monthName = (Get-Culture).TextInfo.ToTitleCase((Get-Culture).DateTimeFormat.GetMonthName($today.Month))
     $pattern = '^(' + [regex]::escape($today.Year) +').*(' + [regex]::escape($monthName) + '|' + (Get-Culture).DateTimeFormat.GetMonthName($today.Month) +')(?!.*(azd|ront|beosztás|havi)).*xlsx$'
+
     $items = Get-ChildItem $([System.Environment]::GetFolderPath("Desktop")) | Where-Object { $_.Name.Normalize() -match ($pattern) } | Sort-Object Name -Descending | Select-Object -First 1
     if ($items.Count -eq 0) {
-        Write-Log -Message "No matching files found for staff schedule." -Level "ERROR"
-        return
+        throw "Did not find staff schedule"
     }
+
     $filePath=$items.FullName
     $ExcelBack = New-Object -ComObject Excel.Application
     $ExcelBack.visible=$false
     $Workbook = $ExcelBack.Workbooks.Open($filePath)
     $workSheet = $Workbook.Sheets.Item(1)
-    $roster = @()
-    $roster += Get-Name $worksheet '1~*' $today
-    $roster += Get-Name $worksheet '*2~*' $today
-    $Workbook.close($false)
-    [void][System.Runtime.InteropServices.Marshal]::ReleaseComObject([System.__ComObject]$ExcelBack)
-    [gc]::Collect()
-    [gc]::WaitForPendingFinalizers()
-    Remove-Variable ExcelBack -ErrorAction SilentlyContinue
-    return $roster
+    
+    try {
+        $name = Get-Name $worksheet $($now.TimeOfDay  -lt (New-TimeSpan -Hours 12 -Minutes 55) ?  '1~*' :  '*2~*') $today
+    } catch {
+        Write-Log $_.Exception.Message -Level "DEBUG"
+        throw
+    } finally {
+        $Workbook.close($false)
+        [void][System.Runtime.InteropServices.Marshal]::ReleaseComObject([System.__ComObject]$ExcelBack)
+        [gc]::Collect()
+        [gc]::WaitForPendingFinalizers()
+        Remove-Variable ExcelBack -ErrorAction SilentlyContinue
+    }
+    return $name
 }
 
 function Get-Name {
@@ -118,15 +123,8 @@ function Get-Name {
     $ColumnOffset = $workSheet.Rows($header.Cells.Row() - 1).Find("sz").Cells.Column()
     $found = $workSheet.Range($workSheet.Cells($header.Cells.Row(), $($ColumnOffset + $date.Day)).Address(), $workSheet.Cells($( -1 + $header.Cells.Row() + $header.MergeArea.Rows.Count()), $($ColumnOffset + $date.Day)).Address()).Find($ShiftID, [Type]::Missing, [int][Microsoft.Office.Interop.Excel.XlFindLookIn]::xlValues, [int][Microsoft.Office.Interop.Excel.XlLookAt]::xlWhole)
     if ($found) {
-        return [PSCustomObject]@{
-            Name  = $($workSheet.Cells($found.Row(), $header.Cells.Column + 1).Value2)
-            Shift = $($workSheet.Cells($found.Row(), $($ColumnOffset + $date.Day)).Text)
-        }
+        return $($workSheet.Cells($found.Row(), $header.Cells.Column + 1).Value2)
     } else {
-        Write-Log "$ShiftID not found in the worksheet." -Level "ERROR"
-        return [PSCustomObject]@{
-            Name  = $null
-            Shift = $ShiftID
-        }
+        throw "$ShiftID not found in the worksheet."
     }
 }
