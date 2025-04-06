@@ -15,7 +15,7 @@
     along with this program. If not, see <https://www.gnu.org/licenses/>.  
 #>
 
-Import-Module $PSScriptRoot\log.psm1
+Import-Module $PSScriptRoot\Modules\LoggingSystem\LoggingSystem.psd1
 
 # Function to create a scheduled task
 function New-ScheduledTask {
@@ -30,14 +30,21 @@ function New-ScheduledTask {
     if (-not (Test-Path $pwshPath)) {
         Write-Log -Message "PowerShell executable not found." -Level "ERROR"
     }
-    $action = New-ScheduledTaskAction -Execute $pwshPath -Argument "-WindowStyle hidden -ExecutionPolicy Bypass -File `"$ScriptPath`""  -WorkingDirectory $PSScriptRoot
-    if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {
-        Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false
+    try {
+        $resolvedPath  = $ScriptPath -replace '\$PSScriptRoot', $PSScriptRoot
+
+        $action = New-ScheduledTaskAction -Execute $pwshPath -Argument "-WindowStyle hidden -ExecutionPolicy Bypass -File `"$resolvedPath`""  -WorkingDirectory $PSScriptRoot
+        if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {
+            Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false
+        }
+        Register-ScheduledTask -TaskName $TaskName -Principal $Principal -Action $action -Description $Description
+        Write-Log -Message "Scheduled task '$TaskName' created."
+        Set-ScheduledTask -TaskName $TaskName -Trigger $triggers
+        Write-Log -Message "Scheduled task '$TaskName' triggers set."
     }
-    Register-ScheduledTask -TaskName $TaskName -Principal $Principal -Action $action -Description $Description
-    Write-Log -Message "Scheduled task '$TaskName' created."
-    Set-ScheduledTask -TaskName $TaskName -Trigger $triggers
-    Write-Log -Message "Scheduled task '$TaskName' triggers set."
+    catch {
+        Write-Log -Message "Failed to create scheduled task '$TaskName': $_" -Level WARNING
+    }
 
 }
 
@@ -114,7 +121,7 @@ foreach ($task in $tasks) {
 }
 
 # Create a script on the desktop
-$modulePathTicket = Join-Path -Path $PSScriptRoot -ChildPath "maintenanceTicket.psm1"
+$modulePathTicket = Join-Path -Path $PSScriptRoot -ChildPath "Modules\MaintenenceTicket\MaintenenceTicket.psd1"
 $newScriptContent = @"
 Import-Module "$($modulePathTicket)"
 
