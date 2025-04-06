@@ -15,14 +15,14 @@
     along with this program. If not, see <https://www.gnu.org/licenses/>.  
 #>
 
-Import-Module $PSScriptRoot\log.psm1
+Import-Module $PSScriptRoot\Modules\LoggingSystem\LoggingSystem.psd1
 
 # Function to create a scheduled task
 function New-ScheduledTask {
     param (
         [string]$TaskName,
         [string]$ScriptPath,
-        [array]$Triggers,
+        [array] $Triggers,
         [string]$Description,
         [object]$Principal
     )
@@ -30,14 +30,21 @@ function New-ScheduledTask {
     if (-not (Test-Path $pwshPath)) {
         Write-Log -Message "PowerShell executable not found." -Level "ERROR"
     }
-    $action = New-ScheduledTaskAction -Execute $pwshPath -Argument "-WindowStyle hidden -ExecutionPolicy Bypass -File `"$ScriptPath`""
-    if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {
-        Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false
+    try {
+        $resolvedPath  = $ScriptPath -replace '\$PSScriptRoot', $PSScriptRoot
+
+        $action = New-ScheduledTaskAction -Execute $pwshPath -Argument "-WindowStyle hidden -ExecutionPolicy Bypass -File `"$resolvedPath`""  -WorkingDirectory $PSScriptRoot
+        if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {
+            Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false
+        }
+        Register-ScheduledTask -TaskName $TaskName -Principal $Principal -Action $action -Description $Description
+        Write-Log -Message "Scheduled task '$TaskName' created."
+        Set-ScheduledTask -TaskName $TaskName -Trigger $triggers
+        Write-Log -Message "Scheduled task '$TaskName' triggers set."
     }
-    Register-ScheduledTask -TaskName $TaskName -Principal $Principal -Action $action -Description $Description
-    Write-Log -Message "Scheduled task '$TaskName' created."
-    Set-ScheduledTask -TaskName $TaskName -Trigger $triggers
-    Write-Log -Message "Scheduled task '$TaskName' triggers set."
+    catch {
+        Write-Log -Message "Failed to create scheduled task '$TaskName': $_" -Level WARNING
+    }
 
 }
 
@@ -81,74 +88,40 @@ $registryProperties = @{
 New-RegistryKeys -RegistryPath $registryPath -Properties $registryProperties
 
 # Define scheduled tasks
-$tasks = @(
-    @{
-        TaskName    = "Open UNP sheet"
-        ScriptPath  = "$PSScriptRoot\Morning\openUNPsheet.ps1"
-        Triggers    = @(New-ScheduledTaskTrigger -Daily -At 7:30)
-        Description = "Runs the Theme Change Manager script at user login."
-    },
-    @{
-        TaskName    = "Theme Change Manager"
-        ScriptPath  = "$PSScriptRoot\Theming\themeChangeManager.ps1"
-        Triggers    = @(New-ScheduledTaskTrigger -AtLogOn)
-        Description = "Runs the Theme Change Manager script at user login."
-    },    
-    @{
-        TaskName    = "Monthly print TIG"
-        ScriptPath  = "$PSScriptRoot\Printing\MonthlyTIGprint.ps1"
-        Triggers    = @(
-            New-ScheduledTaskTrigger -Once -At ([datetime] "2025-03-31 15:30:00")
-            New-ScheduledTaskTrigger -Once -At ([datetime] "2025-04-30 15:30:00")
-            New-ScheduledTaskTrigger -Once -At ([datetime] "2025-05-31 15:30:00")
-            New-ScheduledTaskTrigger -Once -At ([datetime] "2025-06-30 15:30:00")
-            New-ScheduledTaskTrigger -Once -At ([datetime] "2025-08-31 15:30:00")
-            New-ScheduledTaskTrigger -Once -At ([datetime] "2025-09-30 15:30:00")
-            New-ScheduledTaskTrigger -Once -At ([datetime] "2025-10-31 15:30:00")
-            New-ScheduledTaskTrigger -Once -At ([datetime] "2025-11-30 15:30:00")
-        )
-        Description = "Runs the Monthly TIG print script."
-    },
-    @{
-        TaskName    = "PrintWeeklyUNP"
-        ScriptPath  = "$PSScriptRoot\Printing\weeklyUNPprint.ps1"
-        Triggers    = @(New-ScheduledTaskTrigger -Weekly -DaysOfWeek Friday -At (Get-Date -Hour 15 -Minute 0))
-        Description = "Runs the printweeklyUNP script, which saves and prints sheets for UNP."
-    },
-    @{
-        TaskName    = "Morning routine"
-        ScriptPath  = "$PSScriptRoot\Morning\morningscript.ps1"
-        Triggers    = @(New-ScheduledTaskTrigger -AtLogOn)
-        Description = "Runs the Morning routine."
-    },
-    @{
-        TaskName    = "PopUpMuszi"
-        ScriptPath  = "$PSScriptRoot\popUpShiftManager.ps1"
-        Triggers    = @(
-            New-ScheduledTaskTrigger -Daily -At (Get-Date -Hour 12 -Minute 58)
-            New-ScheduledTaskTrigger -Daily -At (Get-Date -Hour 13 -Minute 0)
-            New-ScheduledTaskTrigger -AtLogOn
-        )
-        Description = "Runs the PopUpMuszi script manually or when triggered by other means."
-    },
-    @{
-        TaskName    = "ToggleTheme"
-        ScriptPath  = "$PSScriptRoot\Theming\applyTheme.ps1"
-        Triggers    = @()
-        Description = "Runs the ToggleTheme script manually or when triggered by other means."
-    }
-)
+$tasks = Get-Content .\scheduledTasks.json | ConvertFrom-Json
 
 # Register all scheduled tasks
 foreach ($task in $tasks) {
-    if ($task.TaskName -eq "PrintWeeklyUNP"){
-        $task.Triggers[0].EndBoundary = ([datetime] "2025-06-30 15:00:00")
-    }    
-    New-ScheduledTask -TaskName $task.TaskName -ScriptPath $task.ScriptPath -Triggers $task.Triggers -Description $task.Description -Principal $principal
+    # Prepare an array for scheduled task triggers
+    $taskTriggers = @()
+
+    # Process each trigger for the task
+    foreach ($trigger in $task.Triggers) {
+        if ($trigger.TriggerType -eq "Daily") {
+            $taskTriggers += New-ScheduledTaskTrigger -Daily -At $trigger.Time
+        }
+        elseif ($trigger.TriggerType -eq "AtLogOn") {
+            $taskTriggers += New-ScheduledTaskTrigger -AtLogOn
+        }
+        elseif ($trigger.TriggerType -eq "Once") {
+            $taskTriggers += New-ScheduledTaskTrigger -Once -At ([datetime]$trigger.DateTime)
+        }
+        elseif ($trigger.TriggerType -eq "Weekly") {
+            $taskTriggers += New-ScheduledTaskTrigger -Weekly -DaysOfWeek $trigger.DaysOfWeek -At $trigger.Time
+        }
+    }
+
+    # Special condition for "PrintWeeklyUNP" task to set an end boundary for the trigger
+    if ($task.TaskName -eq "PrintWeeklyUNP") {
+        $taskTriggers[0].EndBoundary = ([datetime] "2025-06-30 15:00:00")
+    }
+
+    # Register the scheduled task
+    New-ScheduledTask -TaskName $task.TaskName -ScriptPath $task.ScriptPath -Triggers $taskTriggers -Description $task.Description -Principal $principal
 }
 
 # Create a script on the desktop
-$modulePathTicket = Join-Path -Path $PSScriptRoot -ChildPath "maintenanceTicket.psm1"
+$modulePathTicket = Join-Path -Path $PSScriptRoot -ChildPath "Modules\MaintenenceTicket\MaintenenceTicket.psd1"
 $newScriptContent = @"
 Import-Module "$($modulePathTicket)"
 
