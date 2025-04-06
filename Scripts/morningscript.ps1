@@ -28,7 +28,7 @@ Import-Module (Join-Path -Path $resolvedModulegPath -ChildPath 'OpenEmails\OpenE
 
 create-Directories
 
-if ($(Get-ItemPropertyValue -Path $registryPath -Name EmailLastShown) -eq (Get-Date).Day) {
+if ($(Get-ItemPropertyValue -Path $registryPath -Name EmailLastShown) -ne (Get-Date).Day) {
     Write-Log -Message "Emailek megnyitása"
     Open-Emails
     Set-ItemProperty -Path $registryPath -Name EmailLastShown -value (Get-Date).Day
