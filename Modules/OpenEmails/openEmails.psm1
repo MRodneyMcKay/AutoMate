@@ -26,4 +26,4 @@ Import-Module (Join-Path -Path $PSScriptRoot -ChildPath '..\LoggingSystem\Loggin
 
 Export-ModuleMember -Function Open-Emails
 
-Write-Log -Message "Module loaded: $($MyInvocation.MyCommand.ModuleName)"
+Write-Log -Message "Module loaded: OpenEmails"

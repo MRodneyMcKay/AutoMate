@@ -25,4 +25,4 @@ Import-Module (Join-Path -Path $PSScriptRoot -ChildPath '..\RosterInformation\Ro
 
 Export-ModuleMember -Function New-Ticket
 
-Write-Log -Message "Module loaded: $($MyInvocation.MyCommand.ModuleName)"
+Write-Log -Message "Module loaded: MaintenenceTicket"
