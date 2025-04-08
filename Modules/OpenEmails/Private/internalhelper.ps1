@@ -15,20 +15,6 @@
     along with this program. If not, see <https://www.gnu.org/licenses/>.  
 #>
 
-function Open-OutlookFolder {
-    param (
-        [object]$Outlook,
-        [string]$FolderType = "6" # Default to Inbox
-    )
-    $namespace = $Outlook.GetNamespace("MAPI")
-    $folder = $namespace.GetDefaultFolder($FolderType)
-    $explorer = $folder.GetExplorer()
-    $explorer.Display()
-    [System.Runtime.InteropServices.Marshal]::ReleaseComObject($namespace)
-    [System.GC]::Collect()
-    [System.GC]::WaitForPendingFinalizers()
-}
-
 function Open-EmailTemplate {
     param (
         [object]$Outlook,
