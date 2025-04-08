@@ -24,4 +24,4 @@ Import-Module (Join-Path -Path $PSScriptRoot -ChildPath '..\TestSchoolDay\TestSc
 
 Export-ModuleMember -Function open-UNP
 
-Write-Log -Message "Module loaded: $($MyInvocation.MyCommand.ModuleName)"
+Write-Log -Message "Module loaded: OpenUNPSheet"

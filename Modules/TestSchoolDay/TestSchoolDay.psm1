@@ -22,4 +22,4 @@ Import-Module (Join-Path -Path $PSScriptRoot -ChildPath '..\LoggingSystem\Loggin
 
 Export-ModuleMember -Function Test-Schoolday
 
-Write-Log -Message "Module loaded: $($MyInvocation.MyCommand.ModuleName)"
+Write-Log -Message "Module loaded: TestSchoolDay"
