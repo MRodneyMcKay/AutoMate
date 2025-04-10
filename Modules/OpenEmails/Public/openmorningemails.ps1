@@ -22,9 +22,12 @@ function Open-Emails {
     $base = 'C:\Users\Hirossport\Hiros Sport Nonprofit Kft\Hiros-sport - Dokumentumok\Furdo\Recepcio\'
     $emails = "$base\Email sablonok\"
     Start-Process "OUTLOOK"
+    Start-Sleep -Seconds 5
     try {
         $outlook = [Runtime.InteropServices.Marshal]::GetActiveObject("Outlook.Application")
-    } catch {$outlook = New-Object -ComObject outlook.application }
+    } catch {
+        Write-Output "Failed to retrieve active Outlook Application, creating new . Error: $_"
+        $outlook = New-Object -ComObject outlook.application }
     try {
         $bevletTemplate = "$emails\BEVLÉT.oft"
             Open-EmailTemplate -Outlook $outlook -TemplatePath $bevletTemplate -Replacements @{
