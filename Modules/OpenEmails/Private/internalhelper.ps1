@@ -15,20 +15,6 @@
     along with this program. If not, see <https://www.gnu.org/licenses/>.  
 #>
 
-function Open-OutlookFolder {
-    param (
-        [object]$Outlook,
-        [string]$FolderType = "6" # Default to Inbox
-    )
-    $namespace = $Outlook.GetNamespace("MAPI")
-    $folder = $namespace.GetDefaultFolder($FolderType)
-    $explorer = $folder.GetExplorer()
-    $explorer.Display()
-    [System.Runtime.InteropServices.Marshal]::ReleaseComObject($namespace)
-    [System.GC]::Collect()
-    [System.GC]::WaitForPendingFinalizers()
-}
-
 function Open-EmailTemplate {
     param (
         [object]$Outlook,
@@ -48,3 +34,44 @@ function Open-EmailTemplate {
     }
     $inspector.Display()
 }
+
+$code = @"
+using System;
+using System.Runtime.InteropServices;
+
+public static class InteropCom
+{
+    // Use CLSIDFromProgIDEx to convert "Outlook.Application" into its CLSID.
+    [DllImport("ole32.dll", CharSet = CharSet.Unicode)]
+    private static extern int CLSIDFromProgIDEx(string progId, out Guid clsid);
+    
+    // Call GetActiveObject from oleaut32.dll to get the running instance.
+    [DllImport("oleaut32.dll", CharSet = CharSet.Unicode)]
+    private static extern int GetActiveObject(ref Guid clsid, IntPtr reserved, [MarshalAs(UnmanagedType.IUnknown)] out object ppunk);
+
+    public static object GetActiveInstance(string progId, bool throwOnError)
+    {
+        if (string.IsNullOrWhiteSpace(progId))
+            throw new ArgumentNullException(nameof(progId));
+
+        int hr = CLSIDFromProgIDEx(progId, out Guid clsid);
+        if (hr < 0)
+        {
+            if (throwOnError)
+                Marshal.ThrowExceptionForHR(hr);
+            return null;
+        }
+
+        hr = GetActiveObject(ref clsid, IntPtr.Zero, out object obj);
+        if (hr < 0)
+        {
+            if (throwOnError)
+                Marshal.ThrowExceptionForHR(hr);
+            return null;
+        }
+        return obj;
+    }
+}
+"@
+
+Add-Type -TypeDefinition $code -Language CSharp -PassThru

@@ -28,4 +28,4 @@ Import-Module (Join-Path -Path $PSScriptRoot -ChildPath '..\LoggingSystem\Loggin
 
 Export-ModuleMember -Function open-StudentWorkReportFurdo, open-StudentWorkReportStrand
 
-Write-Log -Message "Module loaded: $($MyInvocation.MyCommand.ModuleName)"
+Write-Log -Message "Module loaded: StudentWorkReport"

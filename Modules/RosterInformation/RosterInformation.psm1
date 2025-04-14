@@ -27,4 +27,4 @@ Import-Module (Join-Path -Path $PSScriptRoot -ChildPath '..\LoggingSystem\Loggin
 
 Export-ModuleMember -Function Get-Receptionists, Get-ShiftManager
 
-Write-Log -Message "Module loaded: $($MyInvocation.MyCommand.ModuleName)"
+Write-Log -Message "Module loaded: RosterInformation"

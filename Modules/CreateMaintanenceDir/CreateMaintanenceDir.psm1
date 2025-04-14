@@ -21,5 +21,4 @@ Import-Module (Join-Path -Path $PSScriptRoot -ChildPath '..\LoggingSystem\Loggin
 . $PSScriptRoot\Public\createDirectories.ps1
 
 Export-ModuleMember -Function create-Directories
-
-Write-Log -Message "Module loaded: $($MyInvocation.MyCommand.ModuleName)"
+Write-Log -Message "Module loaded: CreateMaintanenceDir"

@@ -1,6 +1,6 @@
 [
     {
-      "TaskName": "test_Open UNP sheet",
+      "TaskName": "Open UNP sheet",
       "ScriptPath": "$PSScriptRoot\\Scripts\\openUNPSheet.ps1",
       "Triggers": [
         {
@@ -11,7 +11,7 @@
       "Description": "Opens the UNP sheet for today."
     },
     {
-      "TaskName": "test_Theme Change Manager",
+      "TaskName": "Theme Change Manager",
       "ScriptPath": "$PSScriptRoot\\Scripts\\themeChangeManager.ps1",
       "Triggers": [
         {
@@ -22,7 +22,7 @@
     },
     
     {
-      "TaskName": "test_Monthly print TIG",
+      "TaskName": "Monthly print TIG",
       "ScriptPath": "$PSScriptRoot\\Scripts\\MonthlyTIGprint.ps1",
       "Triggers": [
         {
@@ -61,7 +61,7 @@
       "Description": "Runs the Monthly TIG print script."
     },
     {
-      "TaskName": "test_PrintWeeklyUNP",
+      "TaskName": "PrintWeeklyUNP",
       "ScriptPath": "$PSScriptRoot\\Scripts\\weeklyUNPprint.ps1",
       "Triggers": [
         {
@@ -73,7 +73,7 @@
       "Description": "Runs the printweeklyUNP script, which saves and prints sheets for UNP."
     },
     {
-      "TaskName": "test_Morning routine",
+      "TaskName": "Morning routine",
       "ScriptPath": "$PSScriptRoot\\Scripts\\morningscript.ps1",
       "Triggers": [
         {
@@ -83,7 +83,7 @@
       "Description": "Runs the Morning routine."
     },
     {
-      "TaskName": "test_PopUpMuszi",
+      "TaskName": "PopUpMuszi",
       "ScriptPath": "$PSScriptRoot\\Scripts\\popUpShiftManager.ps1",
       "Triggers": [
         {
@@ -101,7 +101,7 @@
       "Description": "Runs the PopUpMuszi script manually or when triggered by other means."
     },
     {
-      "TaskName": "test_ToggleTheme",
+      "TaskName": "ToggleTheme",
       "ScriptPath": "$PSScriptRoot\\Scripts\\applyTheme.ps1",
       "Triggers": [],
       "Description": "Runs the ToggleTheme script manually or when triggered by other means."
