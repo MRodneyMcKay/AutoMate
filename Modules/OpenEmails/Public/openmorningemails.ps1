@@ -22,9 +22,12 @@ function Open-Emails {
     $base = 'C:\Users\Hirossport\Hiros Sport Nonprofit Kft\Hiros-sport - Dokumentumok\Furdo\Recepcio\'
     $emails = "$base\Email sablonok\"
     Start-Process "OUTLOOK"
-    Start-Sleep -Seconds 5
+    Start-Sleep -Seconds 20
     try {
-        $outlook = [Runtime.InteropServices.Marshal]::GetActiveObject("Outlook.Application")
+        $outlook = [InteropCom]::GetActiveInstance("Outlook.Application", $true)
+        if (-not $outlook) {
+            throw "Could not get active Outlook application."
+        }
     } catch {
         Write-Output "Failed to retrieve active Outlook Application, creating new . Error: $_"
         $outlook = New-Object -ComObject outlook.application }
