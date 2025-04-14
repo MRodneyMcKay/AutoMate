@@ -17,12 +17,13 @@
 
 Import-Module (Join-Path -Path $PSScriptRoot -ChildPath '..\LoggingSystem\LoggingSystem.psd1')
 
-#import provate functions
+#import private functions
 . $PSScriptRoot\Private\nationalityCodes.ps1
 
 #import public functions
 . $PSScriptRoot\Public\nationalities.ps1
+. $PSScriptRoot\Public\zipCodes.ps1
 
-Export-ModuleMember -Function Get-GroupedNationalityData, Get-NationalityStats
+Export-ModuleMember -Function Get-GroupedNationalityData, Get-NationalityStats, Get-CleanedUpZipCodes, Get-ZipStats
 
 Write-Log -Message "Module loaded: VisitorStatistic"
