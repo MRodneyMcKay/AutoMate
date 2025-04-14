@@ -28,29 +28,33 @@ function Get-GroupedNationalityData {
         $normCode = Normalize-NationalityCode $_."Gyűjtendő" $_."Megnevezés"
         [PSCustomObject]@{
             ISO   = $normCode
-            Count = [int]::Parse($_.Darabszám.Replace(',',''), [System.Globalization.CultureInfo]::InvariantCulture)
+            Darabszám = [int]::Parse($_.Darabszám.Replace(',',''), [System.Globalization.CultureInfo]::InvariantCulture)
         }
     }
 
-    $grouped = $normalized | Group-Object ISO | ForEach-Object {
+    $grouped = $grouped = New-Object System.Collections.Generic.List[PSCustomObject]
+
+    $normalized | Group-Object ISO | ForEach-Object {
         $iso = $_.Name
         $name = if ($isoToHunName.ContainsKey($iso)) { $isoToHunName[$iso] } else { "Ismeretlen" }
-        [PSCustomObject]@{
+    
+        $grouped.Add([PSCustomObject]@{
             ISO    = $iso
             Orszag = $name
-            Count  = [int]($_.Group | Measure-Object Count -Sum).Sum
-        }
+            Darabszám  = [int]($_.Group | Measure-Object Darabszám -Sum).Sum
+        })
     }
-
-    $grouped = $grouped | Sort-Object Count
+  
 
     # Add summary row
-    $total = ($grouped | Measure-Object Count -Sum).Sum
+    $total = ($grouped | Measure-Object Darabszám -Sum).Sum
     $grouped += [PSCustomObject]@{
         ISO    = "Összesen"
         Orszag = "Összes látogató"
-        Count  = [int]$total
+        Darabszám  = [int]$total
     }
+
+    $grouped = $grouped | Sort-Object Darabszám
 
     return $grouped
 }
@@ -61,9 +65,9 @@ function Get-NationalityStats {
         [array]$grouped
     )
 
-    $belfoldi = [int]($grouped | Where-Object { $_.ISO -eq "HU" }).Count
-    $eu = [int]($grouped | Where-Object { $_.ISO -ne "HU" -and $_.ISO -in $euCountries } | Measure-Object -Property Count -Sum).Sum
-    $noneu = [int]($grouped | Where-Object {$_.ISO -ne "Összesen" -and $_.ISO -ne "HU" -and $_.ISO -notin $euCountries } | Measure-Object -Property Count -Sum).Sum
+    $belfoldi = [int]($grouped | Where-Object { $_.ISO -eq "HU" }).Darabszám
+    $eu = [int]($grouped | Where-Object { $_.ISO -ne "HU" -and $_.ISO -in $euCountries } | Measure-Object -Property Darabszám -Sum).Sum
+    $noneu = [int]($grouped | Where-Object {$_.ISO -ne "Összesen" -and $_.ISO -ne "HU" -and $_.ISO -notin $euCountries } | Measure-Object -Property Darabszám -Sum).Sum
 
     $stats = [PSCustomObject]@{
         Belfoldi_HU       = $belfoldi
