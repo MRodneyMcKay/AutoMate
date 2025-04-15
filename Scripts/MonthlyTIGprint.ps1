@@ -15,6 +15,8 @@
     along with this program. If not, see <https://www.gnu.org/licenses/>.  
 #>
 
+$ModulePath = Join-Path -Path $PSScriptRoot -ChildPath "..\Modules\"
+$resolvedModulegPath = (Resolve-Path -Path $ModulePath).Path
 Import-Module (Join-Path -Path $resolvedModulegPath -ChildPath 'LoggingSystem\LoggingSystem.psd1')
 
 # Get the default printer
