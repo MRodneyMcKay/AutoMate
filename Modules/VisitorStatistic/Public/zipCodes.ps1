@@ -84,8 +84,8 @@ function Get-CleanedUpZipCodes {
     $resultArray = @()
     foreach ($zip in $aggregated.Keys | Sort-Object) {
         $resultArray += [PSCustomObject]@{
-            Zip         = $zip
-            Megnevezes  = if ($zipToName.ContainsKey($zip)) { $zipToName[$zip] } else { "Ismeretlen" }
+            Irányítószám         = $zip
+            Település  = if ($zipToName.ContainsKey($zip)) { $zipToName[$zip] } else { "Ismeretlen" }
             Darabszám   = [int]$aggregated[$zip]
         }
     }
@@ -93,7 +93,7 @@ function Get-CleanedUpZipCodes {
     # Append the final record summarizing the total visitors.
     $totalVisitors = ($aggregated.Values | Measure-Object -Sum).Sum
     $resultArray += [PSCustomObject]@{
-        Zip         = "Összesen"
+        Irányítószám         = "Összesen"
         Darabszám   = [int]$totalVisitors
     }
 
@@ -117,17 +117,17 @@ function Get-ZipStats {
     )
 
     # Get Kecskemét count from zip code "6000"
-    $kecskemetRecord = $CleanedData | Where-Object { $_.Zip -eq "6000" }
+    $kecskemetRecord = $CleanedData | Where-Object { $_.Irányítószám -eq "6000" }
     $kecskemetCount = if ($kecskemetRecord) { [int]$kecskemetRecord.Darabszám } else { 0 }
 
     # Get the sum for "Kecskemét környéke"
-    $kornyekeCount = ($CleanedData | Where-Object { $kecskemetKornyekeZips -contains $_.Zip } |
+    $kornyekeCount = ($CleanedData | Where-Object { $kecskemetKornyekeZips -contains $_.Irányítószám } |
                       Measure-Object -Property Darabszám -Sum).Sum
     if (-not $kornyekeCount) { $kornyekeCount = 0 }
 
     # Determine the overall total.
     # We assume the cleaned data includes a summary row (with Zip = "Total")
-    $totalRecord = $CleanedData | Where-Object { $_.Zip -eq "Összesen" }
+    $totalRecord = $CleanedData | Where-Object { $_.Irányítószám -eq "Összesen" }
     if ($totalRecord) {
         $overallTotal = [int]$totalRecord.Darabszám
     }

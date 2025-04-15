@@ -44,7 +44,7 @@ function Get-GroupedNationalityData {
     
         $grouped.Add([PSCustomObject]@{
             ISO    = $iso
-            Orszag = $name
+            Ország = $name
             Darabszám  = [int]($_.Group | Measure-Object Darabszám -Sum).Sum
         })
     }
@@ -54,7 +54,7 @@ function Get-GroupedNationalityData {
     $total = ($grouped | Measure-Object Darabszám -Sum).Sum
     $grouped += [PSCustomObject]@{
         ISO    = "Összesen"
-        Orszag = ""
+        Ország = ""
         Darabszám  = [int]$total
     }
 

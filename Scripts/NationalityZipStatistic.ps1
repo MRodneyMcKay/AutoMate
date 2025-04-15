@@ -15,10 +15,10 @@
     along with this program. If not, see <https://www.gnu.org/licenses/>.  
 #>
 
-$ModulePath = Join-Path -Path $PSScriptRoot -ChildPath "..\Modules\"
-$resolvedModulegPath = (Resolve-Path -Path $ModulePath).Path
+$ModulePath = Join-Path -Path $PSScriptRoot -ChildPath "..\Modules\" 
+$resolvedModulePath = (Resolve-Path -Path $ModulePath).Path
 
-Import-Module (Join-Path -Path $resolvedModulegPath -ChildPath 'VisitorStatistic\VisitorStatistic.psd1')
+Import-Module (Join-Path -Path $resolvedModulePath -ChildPath 'VisitorStatistic\VisitorStatistic.psd1')
 
 Add-Type -AssemblyName System.Windows.Forms
 
@@ -59,119 +59,110 @@ function Get-MonthlyFilePairs {
     return $pairs
 }
 
-# Example usage:
+# Function to generate Excel reports
+function New-ExcelReport {
+    param (
+        [string]$FilePath,
+        [string]$SheetName,
+        [array]$Headers,       # Column headers
+        [array]$Data,          # Data array (PSCustomObjects)
+        [hashtable]$Summary    # Summary data
+    )
 
+    $excel = New-Object -ComObject Excel.Application
+    $excel.Visible = $false
+    $workbook = $excel.Workbooks.Add()
+    $sheet = $workbook.Worksheets.Item(1)
+    $sheet.Name = $SheetName
+
+    # Write headers
+    for ($col = 0; $col -lt $Headers.Count; $col++) {
+        $sheet.Cells.Item(1, $col + 1).Value2 = $Headers[$col]
+    }
+
+    # Write data rows dynamically based on headers
+    $row = 2
+    foreach ($item in $Data) {
+        for ($col = 0; $col -lt $Headers.Count; $col++) {
+            $propertyName = $Headers[$col] # Use the header name to access the property dynamically
+            $sheet.Cells.Item($row, $col + 1).Value2 = [string]$item.$propertyName
+            if ($propertyName -eq "Darabszám") {
+                $sheet.Cells.Item($row, $col + 1).NumberFormat = '# ##0" fő"' # Format numeric columns
+            }
+        }
+        $row++
+    }
+    $Summary
+    # Write summary rows in order
+    $summaryRow = 2
+    $orderedKeys = $Summary.Keys 
+    foreach ($key in $orderedKeys) {
+        $sheet.Range("E$summaryRow").Value2 = $key
+        $sheet.Range("F$summaryRow").Value2 = [string]$Summary[$key]
+        $sheet.Range("F$summaryRow").NumberFormat = '# ##0" fő"' # Format the summary values as numbers
+        $summaryRow++
+    }
+
+    # Auto-fit columns
+    $sheet.Columns.AutoFit()
+
+    # Save and release resources
+    $workbook.SaveAs($FilePath)
+    $excel.Quit()
+    [System.Runtime.Interopservices.Marshal]::ReleaseComObject($excel)
+}
+
+# Main Script
 $folderBrowser = New-Object System.Windows.Forms.FolderBrowserDialog
 $folderBrowser.Description = "Válassz egy mappát, ahol a fájlok találhatók:"
 $folderBrowser.ShowNewFolderButton = $false
+
 if ($folderBrowser.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
     $selectedPath = $folderBrowser.SelectedPath
     $pairs = Get-MonthlyFilePairs -Path $selectedPath
+
+    foreach ($pair in $pairs) {
+        # Generate nationality report
+        $nationalities = Get-GroupedNationalityData -csvPath $pair.NemzPath
+        if (-not $nationalities -or $nationalities.Count -eq 0) {
+            Write-Warning "No valid nationality data found for $($pair.NemzPath). Skipping report generation."
+            continue
+        }
+
+        $nationalStats = Get-NationalityStats $nationalities
+        $nationalSummary = [ordered]@{
+            "Külföldi ország EU-n belül" = $nationalStats.Kulfold_EU
+            "Külföldi ország EU-n kívül" = $nationalStats.Kulfold_NonEU
+            "Összesen:"                  = $nationalStats.Kulfold_Osszesen
+        }
+
+        New-ExcelReport     -FilePath "$selectedPath\$($pair.Month) - Nemeztiségek.xlsx" `
+                            -SheetName "$($pair.Month) - Nemeztiségek" `
+                            -Headers @("ISO", "Ország", "Darabszám") `
+                            -Data $nationalities `
+                            -Summary $nationalSummary
+
+        # Generate zip code report
+        $zipCodes = Get-CleanedUpZipCodes -csvPath $pair.IrszPath -DesiredTotal (($nationalities | Where-Object { $_.ISO -eq "HU" }).Darabszám)
+        if (-not $zipCodes -or $zipCodes.Count -eq 0) {
+            Write-Log "No valid zip code data found for $($pair.IrszPath). Skipping report generation." WARNING
+            continue
+        }
+
+        $zipStats = Get-ZipStats $zipCodes
+        $zipSummary = [ordered]@{
+            "Kecskemét"                             = $zipStats.Kecskemet
+            "Kecskemét környéke"                    = $zipStats.Kecskemet_kornyeke
+            "Egyéb magyarországon belüli település" = $zipStats.Egyeb_telepules
+            "Összesen"                              = $zipStats.Osszesen
+        }
+
+        New-ExcelReport     -FilePath "$selectedPath\$($pair.Month) - Irányítószámok.xlsx" `
+                            -SheetName "$($pair.Month) - Irányítószámok" `
+                            -Headers @("Irányítószám", "Település", "Darabszám") `
+                            -Data $zipCodes `
+                            -Summary $zipSummary
+    }
 } else {
-    Write-Host "Nincs mappa kiválasztva." -ForegroundColor Yellow
-}
-
-foreach ($pair in $pairs) {
-    $pair.Month
-    $nationalities = Get-GroupedNationalityData -csvPath  $pair.NemzPath
-    $nationalStats = Get-NationalityStats $nationalities
-    $zipCodes = Get-CleanedUpZipCodes -csvPath $pair.IrszPath -DesiredTotal (($nationalities | Where-Object { $_.ISO -eq "HU" }).Darabszám)
-    $zipStats = Get-ZipStats $zipCodes
-     # Start Excel
-$excel = New-Object -ComObject Excel.Application
-$excel.Visible = $false 
-
-# Add a new workbook
-$workbook = $excel.Workbooks.Add()
-
-# Get the first worksheet and rename it
-$sheet = $workbook.Worksheets.Item(1)
-$sheet.Name = "$($pair.Month) - Nemeztiségek"
-
-# Write headers
-$headers = @("ISO", "Ország", "Darabszám", "", "Megnevezés", "Darabszám")
-for ($col = 0; $col -lt $headers.Count; $col++) {
-    $sheet.Cells.Item(1, $col + 1).Value2 = $headers[$col]
-}
-
-# Write data rows
-$row = 2
-foreach ($item in $nationalities) {
-    $sheet.Cells.Item($row, 1).Value2 = $item.ISO
-    $sheet.Cells.Item($row, 2).Value2 = $item.Orszag
-    $sheet.Cells.Item($row, 3).Value2 = [string]$item.Darabszám
-    $sheet.Cells.Item($row, 3).NumberFormat = '# ##0" fő"'
-    $row++
-}
-
-# Fill in descriptive labels
-$sheet.Range("E2").Value2 = "Külföldi ország EU-n belül"
-$sheet.Range("E3").Value2 = "Külföldi ország EU-n kívül"
-$sheet.Range("E4").Value2 = "Összesen:"
-
-# Fill in values from nationalStats
-$sheet.Range("F2").Value2 = [string]$nationalStats.Kulfold_EU
-$sheet.Range("F2").NumberFormat = '# ##0" fő"'
-$sheet.Range("F3").Value2 = [string]$nationalStats.Kulfold_NonEU
-$sheet.Range("F3").NumberFormat = '# ##0" fő"'
-$sheet.Range("F4").Value2 = [string]$nationalStats.Kulfold_Osszesen
-$sheet.Range("F4").NumberFormat = '# ##0" fő"'
-
-# Optional: Auto-fit columns
-$sheet.Columns.AutoFit()
-
-$filePath = "$selectedPath\$($pair.Month) - Nemeztiségek.xlsx"
-$workbook.SaveAs($filePath)
-$excel.Quit()
-[System.Runtime.Interopservices.Marshal]::ReleaseComObject($excel)
-
-    # Start Excel
-    $excel = New-Object -ComObject Excel.Application
-    $excel.Visible = $false 
-    
-    # Add a new workbook
-    $workbook = $excel.Workbooks.Add()
-    
-    # Get the first worksheet and rename it
-    $sheet = $workbook.Worksheets.Item(1)
-    $sheet.Name = "$($pair.Month) - Irányítószámok"
-# Write headers
-$headers = @("Irányítószám", "Település", "Darabszám", "", "Megnevezés", "Darabszám")
-for ($col = 0; $col -lt $headers.Count; $col++) {
-    $sheet.Cells.Item(1, $col + 1).Value2 = $headers[$col]
-}
-
-# Write data rows
-$row = 2
-foreach ($item in $zipCodes) {
-    $sheet.Cells.Item($row, 1).Value2 = $item.Zip
-    $sheet.Cells.Item($row, 2).Value2 = $item.Megnevezes
-    $sheet.Cells.Item($row, 3).Value2 = [string] $item.Darabszám
-    $sheet.Cells.Item($row, 3).NumberFormat = '# ##0" fő"'
-    $row++
-}
-
-# Fill in descriptive labels
-$sheet.Range("E2").Value2 = "Kecskemét"
-$sheet.Range("E3").Value2 = "Kecskemét környéke"
-$sheet.Range("E4").Value2 = "Egyéb magyarországon belüli település"
-$sheet.Range("E5").Value2 = "Összesen"
-
-# Fill in values from nationalStats
-$sheet.Range("F2").Value2 = [string]$zipStats.Kecskemet
-$sheet.Range("F2").NumberFormat = '# ##0" fő"'
-$sheet.Range("F3").Value2 = [string]$zipStats.Kecskemet_kornyeke
-$sheet.Range("F3").NumberFormat = '# ##0" fő"'
-$sheet.Range("F4").Value2 = [string]$zipStats.Egyeb_telepules
-$sheet.Range("F4").NumberFormat = '# ##0" fő"'
-$sheet.Range("F5").Value2 = [string]$zipStats.Osszesen
-$sheet.Range("F5").NumberFormat = '# ##0" fő"'
-
-    $sheet.Columns.AutoFit()
-
- $filePath = "$selectedPath\$($pair.Month) - Irányítószámok.xlsx"
-$workbook.SaveAs($filePath)
-$excel.Quit()
-[System.Runtime.Interopservices.Marshal]::ReleaseComObject($excel) 
-
+    Write-LOG "Nincs mappa kiválasztva." ERROR
 }
