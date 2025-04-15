@@ -20,6 +20,7 @@ $resolvedModulePath = (Resolve-Path -Path $ModulePath).Path
 
 Import-Module (Join-Path -Path $resolvedModulePath -ChildPath 'VisitorStatistic\VisitorStatistic.psd1')
 
+[System.Reflection.Assembly]::LoadFrom([System.Environment]::GetEnvironmentVariable("OfficeAssemblies_Excel", [System.EnvironmentVariableTarget]::User))
 Add-Type -AssemblyName System.Windows.Forms
 
 function Get-MonthlyFilePairs {
@@ -92,17 +93,42 @@ function New-ExcelReport {
         }
         $row++
     }
-    $Summary
     # Write summary rows in order
     $summaryRow = 2
-    $orderedKeys = $Summary.Keys 
-    foreach ($key in $orderedKeys) {
+    $startSummaryRow = $summaryRow # Track the start of the summary region
+    foreach ($key in $Summary.Keys) {
         $sheet.Range("E$summaryRow").Value2 = $key
         $sheet.Range("F$summaryRow").Value2 = [string]$Summary[$key]
         $sheet.Range("F$summaryRow").NumberFormat = '# ##0" fő"' # Format the summary values as numbers
+
+        # Apply alternating row colors
+        if (($summaryRow % 2) -eq 0) {
+            $sheet.Range("E$summaryRow : F$summaryRow").Interior.Color = 0xE6E6E6           # Light gray
+        } else {
+            $sheet.Range("E$summaryRow : F$summaryRow").Interior.Color = 0xFFFFFF
+            # White
+        }
+
+        # Apply a stronger color and double upper border for "Összesen"
+        if ($key -eq "Összesen" -or $key -eq "Összesen:") {
+            $sheet.Range("E$summaryRow : F$summaryRow").Interior.Color = 0xCCCCCC
+            $sheet.Range("E$summaryRow : F$summaryRow").Borders.Item([Microsoft.Office.Interop.Excel.XlBordersIndex]::xlEdgeTop).LineStyle = [Microsoft.Office.Interop.Excel.XlLineStyle]::xlDouble
+        }
+
         $summaryRow++
     }
+    $summaryRange = $sheet.Range("E$startSummaryRow : F$($summaryRow - 1)")
+    $summaryRange.Borders.Item([Microsoft.Office.Interop.Excel.XlBordersIndex]::xlEdgeLeft).LineStyle = [Microsoft.Office.Interop.Excel.XlLineStyle]::xlContinuous
+    $summaryRange.Borders.Item([Microsoft.Office.Interop.Excel.XlBordersIndex]::xlEdgeLeft).Weight = [Microsoft.Office.Interop.Excel.XlBorderWeight]::xlMedium
 
+    $summaryRange.Borders.Item([Microsoft.Office.Interop.Excel.XlBordersIndex]::xlEdgeRight).LineStyle = [Microsoft.Office.Interop.Excel.XlLineStyle]::xlContinuous
+    $summaryRange.Borders.Item([Microsoft.Office.Interop.Excel.XlBordersIndex]::xlEdgeRight).Weight = [Microsoft.Office.Interop.Excel.XlBorderWeight]::xlMedium
+
+    $summaryRange.Borders.Item([Microsoft.Office.Interop.Excel.XlBordersIndex]::xlEdgeTop).LineStyle = [Microsoft.Office.Interop.Excel.XlLineStyle]::xlContinuous
+    $summaryRange.Borders.Item([Microsoft.Office.Interop.Excel.XlBordersIndex]::xlEdgeTop).Weight = [Microsoft.Office.Interop.Excel.XlBorderWeight]::xlMedium
+
+    $summaryRange.Borders.Item([Microsoft.Office.Interop.Excel.XlBordersIndex]::xlEdgeBottom).LineStyle = [Microsoft.Office.Interop.Excel.XlLineStyle]::xlContinuous
+    $summaryRange.Borders.Item([Microsoft.Office.Interop.Excel.XlBordersIndex]::xlEdgeBottom).Weight = [Microsoft.Office.Interop.Excel.XlBorderWeight]::xlMedium
     # Auto-fit columns
     $sheet.Columns.AutoFit()
 
