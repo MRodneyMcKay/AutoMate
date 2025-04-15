@@ -19,6 +19,7 @@ Import-Module (Join-Path -Path $PSScriptRoot -ChildPath '..\LoggingSystem\Loggin
 
 #import private functions
 . $PSScriptRoot\Private\nationalityCodes.ps1
+. $PSScriptRoot\Private\zipCodeTranslate.ps1
 
 #import public functions
 . $PSScriptRoot\Public\nationalities.ps1

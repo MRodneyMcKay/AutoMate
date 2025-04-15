@@ -19,12 +19,16 @@ function Get-CleanedUpZipCodes {
     param(
         # Path to the CSV file encoded as Windows-1250
         [Parameter(Mandatory = $true)]
-        [string]$CsvPath,
+        [string]$csvPath,
 
         # The desired total number of visitors
         [Parameter(Mandatory = $true)]
         [int]$DesiredTotal
     )
+
+    if ($null -eq $csvPath) {
+        throw "CSV path is null. Path: $csvPath"
+    }
 
     # Import the CSV file using the specified encoding.
     # This CSV is assumed to have headers: "Gyűjtendő", "Megnevezés", "Darabszám"
@@ -81,6 +85,7 @@ function Get-CleanedUpZipCodes {
     foreach ($zip in $aggregated.Keys | Sort-Object) {
         $resultArray += [PSCustomObject]@{
             Zip         = $zip
+            Megnevezes  = if ($zipToName.ContainsKey($zip)) { $zipToName[$zip] } else { "Ismeretlen" }
             Darabszám   = [int]$aggregated[$zip]
         }
     }
@@ -136,21 +141,11 @@ function Get-ZipStats {
 
     # Create an output array with the statistics
     $statsArray = @()
-    $statsArray += [PSCustomObject]@{
-        Category  = "Kecskemét"
-        Darabszám = [int]$kecskemetCount
-    }
-    $statsArray += [PSCustomObject]@{
-        Category  = "Kecskemét környéke"
-        Darabszám = [int]$kornyekeCount
-    }
-    $statsArray += [PSCustomObject]@{
-        Category  = "Egyéb magyarországon belüli település"
-        Darabszám = [int]$egyebCount
-    }
-    $statsArray += [PSCustomObject]@{
-        Category  = "Összesen"
-        Darabszám = [int]$overallTotal
+    $statsArray = [PSCustomObject]@{
+        Kecskemet = [int]$kecskemetCount
+        Kecskemet_kornyeke = [int]$kornyekeCount
+        Egyeb_telepules= [int]$egyebCount
+        Osszesen = [int]$overallTotal
     }
 
     return $statsArray

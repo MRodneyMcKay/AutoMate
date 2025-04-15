@@ -17,7 +17,7 @@
 
 # --- Global country mappings ---
 $ovalToIso = @{
-    "H"="HU"; "D"="DE"; "A"="AT"; "F"="FR"; "I"="IT"; "CH"="CH"; "NL"="NL"; "B"="BE"; "CZ"="CZ"; "SK"="SK"
+    "H"="HU"; "D"="DE"; "A"="AT"; "F"="FR"; "I"="IT"; "CH"="CH"; "NL"="NL"; "B"="BE"; "CZ"="CZ"; "SL"="SK"
     "PL"="PL"; "GB"="GB"; "E"="ES"; "S"="SE"; "FIN"="FI"; "EST"="EE"; "LT"="LT"; "LV"="LV"
     "RO"="RO"; "BG"="BG"; "HR"="HR"; "GR"="GR"; "DK"="DK"; "IRL"="IE"; "L"="LU"; "P"="PT"
     "M"="MT"; "CY"="CY"; "SI"="SI"; "TR"="TR"; "USA"="US"; "CDN"="CA"; "J"="JP"; "CN"="CN"

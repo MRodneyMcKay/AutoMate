@@ -18,8 +18,12 @@
 # --- Function to load and group data ---
 function Get-GroupedNationalityData {
     param (
-        [string]$csvPath
+        $csvPath
     )
+
+    if ($null -eq $csvPath) {
+        throw "CSV path is null. Path: $csvPath"
+    }
 
     $data = Import-Csv $csvPath -Encoding "Windows-1250" -Delimiter ";"
     $records = $data | Where-Object { $_."Gyűjtendő" -notmatch "mindösszes" }
@@ -50,7 +54,7 @@ function Get-GroupedNationalityData {
     $total = ($grouped | Measure-Object Darabszám -Sum).Sum
     $grouped += [PSCustomObject]@{
         ISO    = "Összesen"
-        Orszag = "Összes látogató"
+        Orszag = ""
         Darabszám  = [int]$total
     }
 
@@ -70,10 +74,10 @@ function Get-NationalityStats {
     $noneu = [int]($grouped | Where-Object {$_.ISO -ne "Összesen" -and $_.ISO -ne "HU" -and $_.ISO -notin $euCountries } | Measure-Object -Property Darabszám -Sum).Sum
 
     $stats = [PSCustomObject]@{
-        Belfoldi_HU       = $belfoldi
-        Kulfold_EU        = $eu
-        Kulfold_NonEU     = $noneu
-        Kulfold_Osszesen  = $eu + $noneu
+        Belfoldi_HU       = [int]$belfoldi
+        Kulfold_EU        = [int]$eu
+        Kulfold_NonEU     = [int]$noneu
+        Kulfold_Osszesen  = [int]$eu + $noneu
     }
 
     return $stats
