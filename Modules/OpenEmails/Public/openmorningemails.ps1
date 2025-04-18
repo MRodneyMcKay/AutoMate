@@ -22,36 +22,66 @@ function Open-Emails {
     $base = 'C:\Users\Hirossport\Hiros Sport Nonprofit Kft\Hiros-sport - Dokumentumok\Furdo\Recepcio\'
     $emails = "$base\Email sablonok\"
     Start-Process "OUTLOOK"
-    Start-Sleep -Seconds 20
-    try {
-        $outlook = [InteropCom]::GetActiveInstance("Outlook.Application", $true)
-        if (-not $outlook) {
-            throw "Could not get active Outlook application."
+
+    # Wait for Outlook to initialize by checking every second
+    $maxWaitTime = 600 # Maximum wait time in seconds (5 minutes)
+    $waitedTime = 0
+    $outlook = $null
+
+    while ($waitedTime -lt $maxWaitTime) {
+        try {
+            $outlook = [InteropCom]::GetActiveInstance("Outlook.Application", $true)
+            if ($outlook -and $outlook.Session) {
+                break
+            }
+        } catch {
+            # Ignore errors during the wait period
         }
-    } catch {
-        Write-Output "Failed to retrieve active Outlook Application, creating new . Error: $_"
-        $outlook = New-Object -ComObject outlook.application }
+        Start-Sleep -Seconds 1
+        $waitedTime++
+    }
+
+    # If Outlook is still not ready, explicitly create a COM object and wait 10 seconds
+    if (-not $outlook -or -not $outlook.Session) {
+        Write-Output "Outlook not ready after $maxWaitTime seconds. Creating COM object explicitly."
+        try {
+            $outlook = New-Object -ComObject outlook.application
+            Start-Sleep -Seconds 10 # Wait for initialization
+        } catch {
+            Write-Log -Message "Failed to create Outlook application. Error: $_" -Level "ERROR"
+            return # Exit the function if Outlook cannot be created
+        }
+    }
+
+    # Validate Outlook object
+    if (-not $outlook -or -not $outlook.Session) {
+        Write-Log -Message "Outlook COM object is not functional after creation." -Level "ERROR"
+        return
+    }
+
     try {
+        # Open BEVLÉT email
         $bevletTemplate = "$emails\BEVLÉT.oft"
-            Open-EmailTemplate -Outlook $outlook -TemplatePath $bevletTemplate -Replacements @{
-                "2023.??.??." = ($Today.AddDays(-1)).ToString("yyyy.MM.dd.")
-            } -subject "BEVLÉT"
-            
+        Open-EmailTemplate -Outlook $outlook -TemplatePath $bevletTemplate -Replacements @{
+            "2023.??.??." = ($Today.AddDays(-1)).ToString("yyyy.MM.dd.")
+        } -subject "BEVLÉT"
 
-            # Open Bérleteken fennmaradt alkalmak email
-            $berletTemplate = "$emails\Bérleteken fennmaradt alkalmak.oft"
-            Open-EmailTemplate -Outlook $outlook -TemplatePath $berletTemplate -Replacements @{
-                "2023.??.??." = ($Today.ToString("yyyy.MM.dd.") + " nyitás")
-            } -subject "Bérletes"
+        # Open Bérleteken fennmaradt alkalmak email
+        $berletTemplate = "$emails\Bérleteken fennmaradt alkalmak.oft"
+        Open-EmailTemplate -Outlook $outlook -TemplatePath $berletTemplate -Replacements @{
+            "2023.??.??." = ($Today.ToString("yyyy.MM.dd.") + " nyitás")
+        } -subject "Bérletes"
 
-            # Open DIÁKOK email
-            $diakokTemplate = "$emails\DIÁKOK.oft"
-            Open-EmailTemplate -Outlook $outlook -TemplatePath $diakokTemplate -Replacements @{} -subject "Diákok"
+        # Open DIÁKOK email
+        $diakokTemplate = "$emails\DIÁKOK.oft"
+        Open-EmailTemplate -Outlook $outlook -TemplatePath $diakokTemplate -Replacements @{} -subject "Diákok"
     } catch {
         Write-Log -Message "Error opening email templates: $_" -Level "ERROR"
     } finally {
-        [System.Runtime.InteropServices.Marshal]::ReleaseComObject($outlook)
-        $outlook = $null
+        if ($outlook) {
+            [System.Runtime.InteropServices.Marshal]::ReleaseComObject($outlook)
+            $outlook = $null
+        }
     }
     [System.GC]::Collect()
     [System.GC]::WaitForPendingFinalizers()
