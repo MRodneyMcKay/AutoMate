@@ -67,7 +67,7 @@ $shiftConfigsZsolti = @(
 )
 
 $shiftConfigsNiki = @(
-    @{ Shift = 1; TriggerTime = ($nikiToday -eq 2 ? [datetime]"13:00" : [datetime]"13:30"); Action = { Set-Niki}; applyThemeToggle = ($zsoltiToday -eq 2 ? "Zsolti" : "Default")},
+    @{ Shift = 1; TriggerTime = ($zsoltiToday -eq 2 ? [datetime]"13:00" : [datetime]"13:30"); Action = { Set-Niki}; applyThemeToggle = ($zsoltiToday -eq 2 ? "Zsolti" : "Default")},
     @{ Shift = 2; TriggerTime = [datetime]"13:00"; Action = ($zsoltiToday -eq 1 ? {Set-Zsolti} : {Set-Default}); applyThemeToggle = "Niki"},
     @{ Shift = 112; TriggerTime = [datetime]"17:30"; Action = { set-Niki }; applyThemeToggle = "Default" },
     @{ Shift = 212; TriggerTime = [datetime]"08:30"; Action = { Set-Default }; applyThemeToggle = "Niki" },
