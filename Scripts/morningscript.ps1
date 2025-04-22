@@ -28,13 +28,6 @@ Import-Module (Join-Path -Path $resolvedModulegPath -ChildPath 'OpenEmails\OpenE
 
 create-Directories
 
-if ($(Get-ItemPropertyValue -Path $registryPath -Name EmailLastShown) -ne (Get-Date).Day) {
-    Write-Log -Message "Emailek megnyitása"
-    Open-Emails
-    Set-ItemProperty -Path $registryPath -Name EmailLastShown -value (Get-Date).Day
-} else {
-    Write-Log -Message "Emailek már megnyitva voltak"
-}
 if ($(Get-ItemPropertyValue -Path $registryPath -Name YesterdaysWorkingHours) -ne (Get-Date).Day) {
     Write-Log -Message "Diákelszámolás elkészítése"
     $roster = Get-Receptionists
@@ -43,6 +36,14 @@ if ($(Get-ItemPropertyValue -Path $registryPath -Name YesterdaysWorkingHours) -n
     Set-ItemProperty -Path $registryPath -Name YesterdaysWorkingHours -value (Get-Date).Day
 } else {
     Write-Log -Message "Diákelszámolás már elkészült"
+}
+
+if ($(Get-ItemPropertyValue -Path $registryPath -Name EmailLastShown) -ne (Get-Date).Day) {
+    Write-Log -Message "Emailek megnyitása"
+    Open-Emails
+    Set-ItemProperty -Path $registryPath -Name EmailLastShown -value (Get-Date).Day
+} else {
+    Write-Log -Message "Emailek már megnyitva voltak"
 }
 
 Start-Process msedge

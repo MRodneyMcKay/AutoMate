@@ -22,9 +22,9 @@ function Open-Emails {
     $base = 'C:\Users\Hirossport\Hiros Sport Nonprofit Kft\Hiros-sport - Dokumentumok\Furdo\Recepcio\'
     $emails = "$base\Email sablonok\"
     Start-Process "OUTLOOK"
-
+    Write-Log -Message "Starting Outlook..." -Level "INFO"
     # Wait for Outlook to initialize by checking every second
-    $maxWaitTime = 600 # Maximum wait time in seconds (5 minutes)
+    $maxWaitTime = 30 # Maximum wait time in seconds (5 minutes)
     $waitedTime = 0
     $outlook = $null
 
@@ -32,10 +32,12 @@ function Open-Emails {
         try {
             $outlook = [InteropCom]::GetActiveInstance("Outlook.Application", $true)
             if ($outlook -and $outlook.Session) {
+                Write-Log -Message "Outlook is ready." -Level "INFO"
                 break
             }
         } catch {
             # Ignore errors during the wait period
+            Write-Log -Message "Waiting for Outlook to be ready..." -Level "INFO"
         }
         Start-Sleep -Seconds 1
         $waitedTime++
