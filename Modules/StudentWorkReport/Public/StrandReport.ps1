@@ -63,6 +63,14 @@ function open-StudentWorkReportStrand {
             }
             $strandsablon.Application.visible = $true
         }
+        else {
+            Write-Log -Message "Nem volt igény a strand elszámolásra" -Level "INFO"
+            if ($strandsablon) {
+                $strandsablon.Workbook.Close($false)
+                $strandsablon.Application.Quit()
+                [System.Runtime.InteropServices.Marshal]::ReleaseComObject($strandsablon.Application) | Out-Null
+            }
+        }
        
     }
     #Set-ItemProperty -Path HKCU:\Software\Script -Name YesterdaysWorkingHours -value $Today.Day
