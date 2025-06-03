@@ -28,22 +28,25 @@ Import-Module (Join-Path -Path $resolvedModulegPath -ChildPath 'OpenEmails\OpenE
 
 create-Directories
 
-if ($(Get-ItemPropertyValue -Path $registryPath -Name YesterdaysWorkingHours) -ne (Get-Date).Day) {
-    Write-Log -Message "Diákelszámolás elkészítése"
-    $roster = Get-Receptionists
-    $approved = @(1, 112, "1/9")
-    open-StudentWorkReportFurdo -fillCompletely ((($roster | Where-Object { $_.Name -eq 'Raduska Zsolt' }).Shift -in $approved -or ($roster | Where-Object { $_.Name -eq 'Konfár Nikolett' }).Shift -in $approved))
-    Set-ItemProperty -Path $registryPath -Name YesterdaysWorkingHours -value (Get-Date).Day
-} else {
-    Write-Log -Message "Diákelszámolás már elkészült"
-}
-
 if ($(Get-ItemPropertyValue -Path $registryPath -Name EmailLastShown) -ne (Get-Date).Day) {
     Write-Log -Message "Emailek megnyitása"
     Open-Emails
     Set-ItemProperty -Path $registryPath -Name EmailLastShown -value (Get-Date).Day
 } else {
     Write-Log -Message "Emailek már megnyitva voltak"
+}
+
+if ($(Get-ItemPropertyValue -Path $registryPath -Name YesterdaysWorkingHours) -ne (Get-Date).Day) {
+    Write-Log -Message "Diákelszámolás elkészítése"
+    $roster = Get-Receptionists
+    $approved = @(1, 112, "1/9")
+    open-StudentWorkReportFurdo -fillCompletely ((($roster | Where-Object { $_.Name -eq 'Raduska Zsolt' }).Shift -in $approved -or ($roster | Where-Object { $_.Name -eq 'Konfár Nikolett' }).Shift -in $approved))
+    if ((Get-Date).Month -in 6,7,8,9) {
+        open-StudentWorkReportStrand -fillCompletely ((($roster | Where-Object { $_.Name -eq 'Raduska Zsolt' }).Shift -in $approved -or ($roster | Where-Object { $_.Name -eq 'Konfár Nikolett' }).Shift -in $approved))
+    }
+    Set-ItemProperty -Path $registryPath -Name YesterdaysWorkingHours -value (Get-Date).Day
+} else {
+    Write-Log -Message "Diákelszámolás már elkészült"
 }
 
 Start-Process msedge
