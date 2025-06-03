@@ -139,3 +139,7 @@ foreach ($assembly in $assemblies) {
     [System.Environment]::SetEnvironmentVariable("OfficeAssemblies_$assembly", $dll_path.Trim(), [System.EnvironmentVariableTarget]::User)
     Write-Log -Message "Office Interop assembly '$assembly' path saved to environment variable."
 }
+
+#Creating EFO névsor in environment variable for easier further editing
+$efo = $("Fazekas Éva", "Keller Dániel", "Karádiné Diószegi Anita", "Keresztes Alexandra", "Matuszka Máté", "Nagy Alexandra", "Sántha Tibor", "Tóth Anett", "Kolonics Anita", "Tóth Annamária Szilvia", "Domokos Enikő", "Magó Dorina", "Ölvödi Petra", "Tóth György", "Bukovics Ferenc", "Zsadányi Zsolt", "Berki Tibor")
+[System.Environment]::SetEnvironmentVariable("EfoNévsor", $efo -join ";", [System.EnvironmentVariableTarget]::User)
