@@ -177,10 +177,11 @@ function Create-Template {
      "=D$($row)<>SZUM(F$($row):H$($row))", [Type]::Missing, [Type]::Missing, [Type]::Missing, [Type]::Missing, [Type]::Missing)
     $condition.Interior.Color = RGB -r 255 -g 0 -b 0
     
-    $efo = $("Fazekas Éva", "Keller Dániel", "Karádiné Diószegi Anita", "Keresztes Alexandra", "Matuszka Máté", "Nagy Alexandra", "Sántha Tibor", "Tóth Anett", "Kolonics Anita", "Tóth Annamária Szilvia", "Domokos Enikő", "Magó Dorina", "Ölvödi Petra", "Tóth György", "Bukovics Ferenc", "Zsadányi Zsolt", "Berki Tibor")
+    $storedEFONames = [System.Environment]::GetEnvironmentVariable("EfoNévsor", [System.EnvironmentVariableTarget]::User)
+    $efoNames = $storedEFONames -split ";" | Sort-Object
     $worksheet.Range("J1").Value2 = "EFO névsor"
     $row = 2
-    foreach ($nev in $efo) {
+    foreach ($nev in $efoNames) {
         $worksheet.Range("J$row").Value2 = $nev
         $row++
     }
