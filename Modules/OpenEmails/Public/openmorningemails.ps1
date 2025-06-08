@@ -78,7 +78,7 @@ function Open-Emails {
         $diakokTemplate = "$emails\DIÁKOK.oft"
         Open-EmailTemplate -Outlook $outlook -TemplatePath $diakokTemplate -Replacements @{} -subject "Diákok"
         # Open karórák email only on Mondays
-        if ($Today.DayOfWeek -eq 'Monday') {
+        if ($Today.DayOfWeek -eq 'Tuesday') {
             $karorakTemplate = "$emails\Órák.oft"
             Open-EmailTemplate -Outlook $outlook -TemplatePath $karorakTemplate -Replacements @{} -subject "Karórák"
         }
