@@ -69,7 +69,7 @@ function open-SummerCamp {
     }
     $honap = (Get-Culture).TextInfo.ToTitleCase((Get-Culture).DateTimeFormat.GetMonthName($today.Month))
     $base='C:\Users\Hirossport\Hiros Sport Nonprofit Kft\Hiros-sport - Dokumentumok\Furdo\Recepcio\Úszó Nemzet Program\'
-    $Filename = "$($base)-=SABLON=-\nyár.docx"
+    $Filename = "$base-=SABLON=-\{0}" -f ((@('Tuesday','Thursday') -contains (Get-Date).DayOfWeek) ? 'nyár_híd.docx' : 'nyár.docx')
     $SaveAsDir="$($base)$($today.ToString('yyyy.MM')) - $honap\"
     $SaveAs="$($SaveAsDir)$($today.ToString('yyyy.MM.dd')).docx"
     $Word=NEW-Object –comobject Word.Application
