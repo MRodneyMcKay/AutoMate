@@ -22,6 +22,6 @@ Import-Module (Join-Path -Path $PSScriptRoot -ChildPath '..\TestSchoolDay\TestSc
 #import public functions
 . $PSScriptRoot\Public\opensheet.ps1
 
-Export-ModuleMember -Function open-UNP
+Export-ModuleMember -Function open-UNP, open-SummerCamp
 
 Write-Log -Message "Module loaded: OpenUNPSheet"
