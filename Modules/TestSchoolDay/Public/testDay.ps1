@@ -43,3 +43,32 @@ function Test-Schoolday {
     Write-Log -Message "$($date.ToString('yyyy-MM-dd')) is a school day."
     return $true
 }
+
+function Test-Summercamp {
+    param (
+        [datetime]$date = (Get-Date)
+    )
+    Write-Log -Message "Testing if $($date.ToString('yyyy-MM-dd')) is a summercamp day."
+    # Check if today is Saturday or Sunday
+    if ($date.DayOfWeek -in @('Saturday', 'Sunday')) {
+        Write-Log -Message "$($date.ToString('yyyy-MM-dd')) is a weekend."
+        return $false
+    }
+
+    if ($date.Month -eq 8 -and $date.Day -eq 20) {
+        return $false
+    }
+
+    $summerRange = @(
+        [PSCustomObject]@{ Start = '2025-06-23'; End = '2025-07-31' }
+    )
+
+    if ($date -ge (Get-Date $summerRange.Start) -and $date -le (Get-Date $summerRange.End)) {
+        Write-Log -Message "$($date.ToString('yyyy-MM-dd')) is within the summer camp period"
+        return $true
+    }
+    else {
+        Write-Log -Message "$($date.ToString('yyyy-MM-dd')) is not within the summer camp period"
+        return $false
+    }
+}

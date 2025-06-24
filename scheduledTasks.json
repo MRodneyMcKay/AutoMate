@@ -11,6 +11,17 @@
       "Description": "Opens the UNP sheet for today."
     },
     {
+      "TaskName": "Open UNP summer sheet",
+      "ScriptPath": "$PSScriptRoot\\Scripts\\openSummertimeUNP.ps1",
+      "Triggers": [
+        {
+          "TriggerType": "Daily",
+          "Time": "16:45"
+        }
+      ],
+      "Description": "Opens the summer camp UNP sheet for today."
+    },
+    {
       "TaskName": "Theme Change Manager",
       "ScriptPath": "$PSScriptRoot\\Scripts\\themeChangeManager.ps1",
       "Triggers": [
