@@ -15,11 +15,10 @@
     along with this program. If not, see <https://www.gnu.org/licenses/>.  
 #>
 
-Import-Module (Join-Path -Path $PSScriptRoot -ChildPath '..\LoggingSystem\LoggingSystem.psd1')
+$ModulePath = Join-Path -Path $PSScriptRoot -ChildPath "..\Modules\"
+$resolvedModulegPath = (Resolve-Path -Path $ModulePath).Path
 
-#import public functions
-. $PSScriptRoot\Public\testDay.ps1
+Import-Module (Join-Path -Path $resolvedModulegPath -ChildPath 'LoggingSystem\LoggingSystem.psd1')
+Import-Module (Join-Path -Path $resolvedModulegPath -ChildPath 'openUNPsheet\openUNPsheet.psd1')
 
-Export-ModuleMember -Function Test-Schoolday, Test-Summercamp
-
-Write-Log -Message "Module loaded: TestSchoolDay"
+open-SummerCamp
