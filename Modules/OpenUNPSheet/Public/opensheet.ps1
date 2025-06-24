@@ -57,3 +57,55 @@ function open-UNP {
         Write-Log -Message "Iskola szünet van"
     }
 }
+
+function open-SummerCamp {
+    param (
+        $today = (Get-Date)
+    )
+    Write-Log -Message "Testing if $($today.ToString('yyyy-MM-dd')) is a summer day." -Level "INFO"
+    if (-not (Test-Summercamp)) {
+        Write-Log -Message "Not a summer camp day."
+        return
+    }
+    $honap = (Get-Culture).TextInfo.ToTitleCase((Get-Culture).DateTimeFormat.GetMonthName($today.Month))
+    $base='C:\Users\Hirossport\Hiros Sport Nonprofit Kft\Hiros-sport - Dokumentumok\Furdo\Recepcio\Úszó Nemzet Program\'
+    $Filename = "$($base)-=SABLON=-\nyár.docx"
+    $SaveAsDir="$($base)$($today.ToString('yyyy.MM')) - $honap\"
+    $SaveAs="$($SaveAsDir)$($today.ToString('yyyy.MM.dd')).docx"
+    $Word=NEW-Object –comobject Word.Application
+    $Word.visible=$false
+    $Document=$Word.documents.open($Filename)
+    if (!$Document) {
+        Write-Log -Message "Failed to open the document: $Filename" -Level "INFO"
+        $Word.Quit()
+        return
+    }
+    $FindText = "Nap"
+    $ReplaceText = $today.ToString("MMMM dd.") # <= Replace it with this text
+    $MatchCase = $false
+    $MatchWholeWorld = $true
+    $MatchWildcards = $false
+    $MatchSoundsLike = $false
+    $MatchAllWordForms = $false
+    $Forward = $false
+    $Wrap = 1
+    $Format = $false
+    $Replace = 2
+    if (!$($Document.Content.Find.Execute($FindText, $MatchCase, $MatchWholeWorld, $MatchWildcards, $MatchSoundsLike, $MatchAllWordForms, $Forward, $Wrap, $Format, $ReplaceText, $Replace))) {
+        $Document.Close(-1)
+        $Word.Quit()
+        Write-Log -Message "Failed to replace text '$FindText' with '$ReplaceText' in the document."
+    }
+    else {   
+
+        if (-Not ([System.IO.Directory]::Exists($SaveAsDir)))
+        {
+            mkdir -p $SaveAsDir
+        }
+        $Document.SaveAs2($SaveAs)
+        Write-Log -Message "Document opened: $SaveAs"
+        $Document.PrintOut()
+        Write-Log -Message "Printed document: $Filename"
+        $Word.visible=$true
+    }
+}
