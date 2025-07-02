@@ -50,7 +50,7 @@ function Test-Summercamp {
     )
     Write-Log -Message "Testing if $($date.ToString('yyyy-MM-dd')) is a summercamp day."
     # Check if today is Saturday or Sunday
-    if ($date.DayOfWeek -in @('Saturday', 'Sunday')) {
+    if ($date.DayOfWeek -in @('Friday', 'Saturday', 'Sunday')) {
         Write-Log -Message "$($date.ToString('yyyy-MM-dd')) is a weekend."
         return $false
     }
