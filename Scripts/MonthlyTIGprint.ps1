@@ -80,7 +80,7 @@ function Print-Document {
     )
 
     # Configure printer for one-sided printing
-    Set-PrintConfiguration -PrinterName $PrinterName -DuplexingMode OneSided | Out-Null
+    Configure-Printer -DuplexingMode "OneSided"
 
     # Print the document
     $BackGround = 0
@@ -91,7 +91,7 @@ function Print-Document {
     Write-Log -Message "Printing $PageRange pages of $($Document.Name) on $PrinterName"
 
     # Restore printer to two-sided printing
-    Set-PrintConfiguration -PrinterName $PrinterName -DuplexingMode TwoSidedLongEdge
+    Configure-Printer -DuplexingMode "TwoSidedLongEdge"
 }
 
 # Clean up and release COM objects

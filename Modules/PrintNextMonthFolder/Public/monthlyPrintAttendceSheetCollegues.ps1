@@ -85,7 +85,7 @@ function Print-AttandanceSheetUszomester {
 
     # Get the default printer
     $DefaultPrinter = Get-CimInstance -ClassName Win32_Printer | Where-Object { $_.Default -eq $true }
-    Set-PrintConfiguration -PrinterName $DefaultPrinter.Name -DuplexingMode TwoSidedLongEdge
+    Configure-Printer -DuplexingMode "TwoSidedLongEdge"
     
     # Open Excel workbook
     $Excel = New-Object -ComObject Excel.Application
@@ -111,7 +111,7 @@ function Print-AttandanceSheetFrontOffice {
 
     # Get the default printer
     $DefaultPrinter = Get-CimInstance -ClassName Win32_Printer | Where-Object { $_.Default -eq $true }
-    Set-PrintConfiguration -PrinterName $DefaultPrinter.Name -DuplexingMode TwoSidedLongEdge
+    Configure-Printer -DuplexingMode "TwoSidedLongEdge"
     
     # Open Excel workbook
     $Excel = New-Object -ComObject Excel.Application
@@ -137,7 +137,7 @@ function Print-AttandanceSheetKarbantarto {
 
     # Get the default printer
     $DefaultPrinter = Get-CimInstance -ClassName Win32_Printer | Where-Object { $_.Default -eq $true }
-    Set-PrintConfiguration -PrinterName $DefaultPrinter.Name -DuplexingMode TwoSidedLongEdge
+    Configure-Printer -DuplexingMode "TwoSidedLongEdge"
     
     # Open Excel workbook
     $Excel = New-Object -ComObject Excel.Application
@@ -166,7 +166,7 @@ function Print-AttandanceSheetGepesz {
 
     # Get the default printer
     $DefaultPrinter = Get-CimInstance -ClassName Win32_Printer | Where-Object { $_.Default -eq $true }
-    Set-PrintConfiguration -PrinterName $DefaultPrinter.Name -DuplexingMode TwoSidedLongEdge
+    Configure-Printer -DuplexingMode "TwoSidedLongEdge"
     
     # Open Excel workbook
     $Excel = New-Object -ComObject Excel.Application

@@ -22,6 +22,7 @@ function Configure-Printer {
     )
     try {
         Set-PrintConfiguration -PrinterName $PrinterName -DuplexingMode $DuplexingMode | Out-Null
+        Write-Log -Message "Configure printer $PrinterName with duplexing mode $DuplexingMode." -Level INFO
     } catch {
         Write-Log -Message "Failed to configure printer $PrinterName with duplexing mode $DuplexingMode. Error: $_" -Level Error
     }

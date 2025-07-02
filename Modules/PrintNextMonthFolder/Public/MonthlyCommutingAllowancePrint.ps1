@@ -75,11 +75,10 @@ function Generate-PageRange {
 function Print-Document {
     param (
         [object]$Document,
-        [string]$PrinterName,
         [string]$PageRange
     )
 
-    Configure-Printer -PrinterName $PrinterName -DuplexingMode "OneSided"
+    Configure-Printer -DuplexingMode "OneSided"
 
     $Background = 0
     $Range = [Microsoft.Office.Interop.Word.WdPrintOutRange]::wdPrintRangeOfPages
@@ -99,7 +98,7 @@ function Print-Document {
         [Type]::Missing
     )
 
-    Configure-Printer -PrinterName $PrinterName -DuplexingMode "TwoSidedLongEdge"
+    Configure-Printer -DuplexingMode "TwoSidedLongEdge"
 }
 
 # Function to clean up Word COM objects
