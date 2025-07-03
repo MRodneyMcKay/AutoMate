@@ -83,7 +83,7 @@ function Print-AttandanceSheetUszomester {
         [string]$OpenFile
     )
 
-    Configure-Printer -DuplexingMode "TwoSidedLongEdge"
+    Set-PrinterDuplexMode -DuplexingMode "TwoSidedLongEdge"
     
     # Open Excel workbook
     $Excel = New-Object -ComObject Excel.Application
@@ -107,7 +107,7 @@ function Print-AttandanceSheetFrontOffice {
         [string]$OpenFile
     )
 
-    Configure-Printer -DuplexingMode "TwoSidedLongEdge"
+    Set-PrinterDuplexMode -DuplexingMode "TwoSidedLongEdge"
     
     # Open Excel workbook
     $Excel = New-Object -ComObject Excel.Application
@@ -131,7 +131,7 @@ function Print-AttandanceSheetKarbantarto {
         [string]$OpenFile
     )
 
-    Configure-Printer -DuplexingMode "TwoSidedLongEdge"
+    Set-PrinterDuplexMode -DuplexingMode "TwoSidedLongEdge"
     
     # Open Excel workbook
     $Excel = New-Object -ComObject Excel.Application
@@ -158,7 +158,7 @@ function Print-AttandanceSheetGepesz {
         [string]$OpenFile
     )
 
-    Configure-Printer -DuplexingMode "TwoSidedLongEdge"
+    Set-PrinterDuplexMode -DuplexingMode "TwoSidedLongEdge"
     
     # Open Excel workbook
     $Excel = New-Object -ComObject Excel.Application

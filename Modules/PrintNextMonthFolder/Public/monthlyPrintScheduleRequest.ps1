@@ -51,7 +51,7 @@ function Print-DocumentSchedule {
     $Background = 0
     $Range = [Microsoft.Office.Interop.Word.WdPrintOutRange]::wdPrintRangeOfPages
     $Item = 0
-    Configure-Printer -DuplexingMode "TwoSidedLongEdge"
+    Set-PrinterDuplexMode -DuplexingMode "TwoSidedLongEdge"
     $Document.PrintOut(
         [ref]$Background,
         [Type]::Missing,

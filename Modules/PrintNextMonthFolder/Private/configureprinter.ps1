@@ -15,7 +15,7 @@
     along with this program. If not, see <https://www.gnu.org/licenses/>.  
 #>
 
-function Configure-Printer {
+function Set-PrinterDuplexMode {
     param (
         [string]$PrinterName = (Get-CimInstance -ClassName Win32_Printer | Where-Object { $_.Default -eq $true }).Name,
         [string]$DuplexingMode
