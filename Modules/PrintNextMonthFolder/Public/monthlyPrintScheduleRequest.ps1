@@ -42,7 +42,7 @@ function Open-WordDocument {
 }
 
 # Function to print a specific page range
-function Print-Document {
+function Print-DocumentSchedule {
     param (
         [object]$Document,
         [string]$PageRange,
@@ -51,7 +51,7 @@ function Print-Document {
     $Background = 0
     $Range = [Microsoft.Office.Interop.Word.WdPrintOutRange]::wdPrintRangeOfPages
     $Item = 0
-
+    Set-PrinterDuplexMode -DuplexingMode "TwoSidedLongEdge"
     $Document.PrintOut(
         [ref]$Background,
         [Type]::Missing,
@@ -64,7 +64,7 @@ function Print-Document {
         [ref]$PageRange,
         [Type]::Missing
     )
-     Write-Log -Message "Printing $PageRange pages of $($Document.Name) on $PrinterName"
+     Write-Log -Message "Printing $PageRange pages of $($Document.Name)"
 }
 
 # Function to clean up Word COM objects
@@ -94,19 +94,17 @@ function Get-PageRange {
 # Main function to handle printing
 function Print-Igeny {
     param (
-        [string]$PrinterName =  (Get-CimInstance -ClassName Win32_Printer | Where-Object { $_.Default -eq $true }).Name,
         [string]$FilePath,
         [int]$StartMultiplier,
         [int]$EndMultiplier
     )
-    Configure-Printer -PrinterName $PrinterName -DuplexingMode "TwoSidedLongEdge"
 
     $WordObjects = Open-WordDocument -FilePath $FilePath
     $Word = $WordObjects.Word
     $Document = $WordObjects.Document
 
     $PageRange = Get-PageRange -MonthOffset 1 -StartMultiplier $StartMultiplier -EndMultiplier $EndMultiplier
-    Print-Document -Document $Document -PageRange $PageRange
+    Print-DocumentSchedule -Document $Document -PageRange $PageRange
 
     Cleanup-WordObjects_requests -Word $Word -Document $Document
 }

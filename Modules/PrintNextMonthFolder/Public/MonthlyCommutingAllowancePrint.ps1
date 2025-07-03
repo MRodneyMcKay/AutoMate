@@ -72,14 +72,13 @@ function Generate-PageRange {
 }
 
 # Function to print the document
-function Print-Document {
+function Print-CommutingAllowancePages {
     param (
         [object]$Document,
-        [string]$PrinterName,
         [string]$PageRange
     )
 
-    Configure-Printer -PrinterName $PrinterName -DuplexingMode "OneSided"
+    Set-PrinterDuplexMode -DuplexingMode "OneSided"
 
     $Background = 0
     $Range = [Microsoft.Office.Interop.Word.WdPrintOutRange]::wdPrintRangeOfPages
@@ -99,7 +98,7 @@ function Print-Document {
         [Type]::Missing
     )
 
-    Configure-Printer -PrinterName $PrinterName -DuplexingMode "TwoSidedLongEdge"
+    Set-PrinterDuplexMode -DuplexingMode "TwoSidedLongEdge"
 }
 
 # Function to clean up Word COM objects
@@ -139,7 +138,7 @@ $month = (Get-Date).Month + 1
 $sections = $mergedDocument.Sections.Count
 $pageRange = Generate-PageRange -Month $month -Sections $sections
 
-Print-Document -Document $mergedDocument -PrinterName $defaultPrinter -PageRange $pageRange
+Print-CommutingAllowancePages -Document $mergedDocument -PrinterName $defaultPrinter -PageRange $pageRange
 
 Write-Log -Message "Printing $pageRange for $($mergedDocument.Name) on $defaultPrinter"
 
