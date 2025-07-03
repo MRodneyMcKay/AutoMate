@@ -75,12 +75,11 @@ function Generate-PageRange {
 function Print-Document {
     param (
         [object]$Document,
-        [string]$PrinterName,
         [string]$PageRange
     )
 
     # Configure printer for one-sided printing
-    Set-PrintConfiguration -PrinterName $PrinterName -DuplexingMode OneSided | Out-Null
+    Set-PrinterDuplexMode -DuplexingMode "OneSided"
 
     # Print the document
     $BackGround = 0
@@ -88,10 +87,10 @@ function Print-Document {
     $Item = 0
     $Copies = 1
     $Document.PrintOut([ref]$BackGround, [Type]::Missing, [ref]$Range, [Type]::Missing, [Type]::Missing, [Type]::Missing, [ref]$Item, [ref]$Copies, [ref]$PageRange, [Type]::Missing)
-    Write-Log -Message "Printing $PageRange pages of $($Document.Name) on $PrinterName"
+    Write-Log -Message "Printing $PageRange pages of $($Document.Name)"
 
     # Restore printer to two-sided printing
-    Set-PrintConfiguration -PrinterName $PrinterName -DuplexingMode TwoSidedLongEdge
+    Set-PrinterDuplexMode -DuplexingMode "TwoSidedLongEdge"
 }
 
 # Clean up and release COM objects
@@ -127,6 +126,6 @@ $month = (Get-Date).Month + 1
 $sections = $mergedDocument.Sections.Count
 $pageRange = Generate-PageRange -Month $month -Sections $sections
 
-Print-Document -Document $mergedDocument -PrinterName $defaultPrinter.Name -PageRange $pageRange
+Print-Document -Document $mergedDocument -PageRange $pageRange
 
 Cleanup-WordObjects -Word $Word -Document $mergedDocument -OriginalDocument $OriginalDocument
