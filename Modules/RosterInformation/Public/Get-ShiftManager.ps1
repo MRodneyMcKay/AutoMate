@@ -36,7 +36,7 @@ function Get-ShiftManager
     $workSheet = $Workbook.Sheets.Item(1)
     
     try {
-        $name = Get-Name $worksheet $($now.TimeOfDay  -lt (New-TimeSpan -Hours 12 -Minutes 55) ?  '1~*' :  '*2~*') $today
+        $name = Get-Name $worksheet $($now.TimeOfDay  -lt (New-TimeSpan -Hours 12 -Minutes 55) ?  '1~*' :  '*2~**') $today
     } catch {
         Write-Log $_.Exception.Message -Level "DEBUG"
         throw
