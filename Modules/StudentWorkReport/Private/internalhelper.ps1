@@ -74,8 +74,14 @@ function get-Hours {
     elseif ($definition -eq "12óra") {
         get-Hours("08:30-20:30")
     }
+    elseif ($definition -eq "4é") {
+        get-Hours("21:00-01:00")
+    }
+    elseif ($definition -eq "5é") {
+        get-Hours("20:30-01:30")
+    }
     elseif ($definition -eq "2+4é") {
-        get-Hours ('13:30-01:30')
+        get-Hours ('13:00-00:30')
     }
     elseif ([regex]::Matches($definition, '(?<=\().+?(?=\))' ).Success) {
         get-Hours(([regex]::Matches($definition, '(?<=\().+?(?=\))' ).Value))
