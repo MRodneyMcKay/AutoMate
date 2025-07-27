@@ -17,23 +17,80 @@
 
 function Get-Occupancies {
 
-$excel = New-Object -ComObject Excel.Application
-$excel.Visible = $false
-$excel.DisplayAlerts = $false
+    $excel = New-Object -ComObject Excel.Application
+    $excel.Visible = $false
+    $excel.DisplayAlerts = $false
 
-$filename = Get-TodaysScheduleFile
-if (-not $filename) {
-    "No schedule file found for today."
-    return
+    $filename = Get-TodaysScheduleFile
+    if (-not $filename) {
+        "No schedule file found for today."
+        return
+    }
+
+    $workbook = $excel.Workbooks.Open((Get-TodaysScheduleFile))
+
+    $pools = Get-PoolRanges -Sheet $workbook.Sheets.Item(1)
+
+    $TimeRanges = Get-BlockedPoolTimeRanges -Sheet $workbook.Sheets.Item(1) -Pools $pools
+
+    $workbook.Close($false)
+    $excel.Quit()
+    [System.Runtime.Interopservices.Marshal]::ReleaseComObject($excel) | Out-Null
+    return $TimeRanges
 }
 
-$workbook = $excel.Workbooks.Open((Get-TodaysScheduleFile))
+function Set-Triggers {
+    # Get the pool occupancy data inside the function
+    $Pools = Get-Occupancies
+    $TaskFolder = "\"  # Default to root folder in Task Scheduler
 
-$pools = Get-PoolRanges -Sheet $workbook.Sheets.Item(1)
+    foreach ($pool in $Pools) {
+        $poolName = $pool.PoolName
+        $blockedRanges = $pool.BlockedRanges
 
-Get-BlockedPoolTimeRanges -Sheet $workbook.Sheets.Item(1) -Pools $pools
+        if (-not $blockedRanges -or $blockedRanges.Count -eq 0) {
+            Write-Verbose "Skipping pool $poolName because it has no blocked ranges."
+            continue
+        }
 
-$workbook.Close($false)
-$excel.Quit()
-[System.Runtime.Interopservices.Marshal]::ReleaseComObject($excel) | Out-Null
+        $occTaskName = "${poolName}_Occ"
+        $freeTaskName = "${poolName}_Free"
+
+        $occTriggers = @()
+        $freeTriggers = @()
+
+        foreach ($range in $blockedRanges) {
+            $start = [datetime]$range.Start
+            $end = [datetime]$range.End
+
+            $occTriggers += New-ScheduledTaskTrigger -Once -At $start
+            $freeTriggers += New-ScheduledTaskTrigger -Once -At $end
+        }
+
+        function Update-TaskTriggers($taskName, $triggers) {
+            Write-Verbose "Updating triggers for task '$taskName' in folder '$TaskFolder'"
+
+            try {
+                # You may want to verify the task exists before setting triggers
+                $task = Get-ScheduledTask -TaskName $taskName -TaskPath $TaskFolder -ErrorAction Stop
+
+                if ($null -eq $task) {
+                    Write-Warning "Task '$taskName' was not found."
+                    return
+                }
+
+                # Simplified trigger update command as you requested:
+                Set-ScheduledTask -TaskName $taskName -TaskPath $TaskFolder -Trigger $triggers
+
+                Write-Host "Updated triggers for task $taskName"
+            }
+            catch {
+                Write-Warning "Error updating task '$taskName': $($_.Exception.Message)"
+            }
+        }
+
+        Update-TaskTriggers -taskName $occTaskName -triggers $occTriggers
+        Update-TaskTriggers -taskName $freeTaskName -triggers $freeTriggers
+    }
 }
+

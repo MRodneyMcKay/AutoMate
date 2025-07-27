@@ -15,16 +15,10 @@
     along with this program. If not, see <https://www.gnu.org/licenses/>.  
 #>
 
-Import-Module (Join-Path -Path $PSScriptRoot -ChildPath '..\LoggingSystem\LoggingSystem.psd1')
-[System.Reflection.Assembly]::LoadFrom([System.Environment]::GetEnvironmentVariable("OfficeAssemblies_Excel", [System.EnvironmentVariableTarget]::User)) 
+$ModulePath = Join-Path -Path $PSScriptRoot -ChildPath "..\Modules\"
+$resolvedModulegPath = (Resolve-Path -Path $ModulePath).Path
 
+Import-Module (Join-Path -Path $resolvedModulegPath -ChildPath 'LoggingSystem\LoggingSystem.psd1')
+Import-Module (Join-Path -Path $resolvedModulegPath -ChildPath 'LaneOccupancy\LaneOccupancy.psd1')
 
-#import private functions
-. $PSScriptRoot\Private\internalhelper.ps1
-
-#import public functions
-. $PSScriptRoot\Public\laneoccupancy.ps1
-
-Export-ModuleMember -Function Get-Occupancies, Set-Triggers
-
-Write-Log -Message "Module loaded: LaneOccupancy"
+Set-Triggers

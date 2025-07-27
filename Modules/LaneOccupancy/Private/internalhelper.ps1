@@ -123,28 +123,28 @@ function Get-PoolRanges {
     }
     return @(
     [PSCustomObject]@{
-        Name     = "Versenymedence, 50 m"
+        Name     = "M15"
         StartRow = $rangeInfo.StartRow
         EndRow   = $rangeInfo.EndRow
         StartCol = 1    # A
         EndCol   = 11   # K
     },
     [PSCustomObject]@{
-        Name     = "Bemelegítőmedence, 25m"
+        Name     = "M17"
         StartRow = $rangeInfo.StartRow
         EndRow   = $rangeInfo.EndRow
         StartCol = 13   # M
         EndCol   = 19   # S
     },
     [PSCustomObject]@{
-        Name     = "Tanmedence"
+        Name     = "M16"
         StartRow = $rangeInfo.StartRow
         EndRow   = $rangeInfo.EndRow
         StartCol = 21   # U
         EndCol   = 23   # W
     },
     [PSCustomObject]@{
-        Name     = "Kalandmedence"
+        Name     = "M09"
         StartRow = $rangeInfo.StartRow
         EndRow   = $rangeInfo.EndRow
         StartCol = 25   # Y
