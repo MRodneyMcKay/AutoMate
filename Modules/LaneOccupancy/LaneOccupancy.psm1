@@ -22,7 +22,7 @@ Import-Module (Join-Path -Path $PSScriptRoot -ChildPath '..\LoggingSystem\Loggin
 . $PSScriptRoot\Private\internalhelper.ps1
 
 #import public functions
-. $PSScriptRoot\Private\laneoccupancy.ps1
+. $PSScriptRoot\Public\laneoccupancy.ps1
 
 Export-ModuleMember -Function Get-Occupancies
 

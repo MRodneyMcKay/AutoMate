@@ -31,8 +31,7 @@ $workbook = $excel.Workbooks.Open((Get-TodaysScheduleFile))
 
 $pools = Get-PoolRanges -Sheet $workbook.Sheets.Item(1)
 
-
-$pools
+Get-BlockedPoolTimeRanges -Sheet $workbook.Sheets.Item(1) -Pools $pools
 
 $workbook.Close($false)
 $excel.Quit()

@@ -152,3 +152,74 @@ function Get-PoolRanges {
     }
 )
 }
+
+function Get-BlockedPoolTimeRanges {
+    param (
+        [Parameter(Mandatory)]
+        $Sheet,
+
+        [Parameter(Mandatory)]
+        $Pools,
+        $today = (Get-Date)
+    )
+
+    $results = @()
+
+    foreach ($pool in $Pools) {
+        $blockedRanges = @()
+        $startRow = $pool.StartRow
+        $endRow   = $pool.EndRow
+        $startCol = $pool.StartCol
+        $endCol   = $pool.EndCol
+
+        $inBlock = $false
+        $blockStartRow = $null
+
+        for ($row = $startRow + 1; $row -le $endRow; $row++) {  # Skip header row
+            $isFull = $true
+
+            for ($col = $startCol + 1; $col -le $endCol; $col++) {  # Skip time column
+                $cellVal = $Sheet.Cells.Item($row, $col).Text
+                if ([string]::IsNullOrWhiteSpace($cellVal)) {
+                    $isFull = $false
+                    break
+                }
+            }
+
+            if ($isFull -and -not $inBlock) {
+                $inBlock = $true
+                $blockStartRow = $row
+            }
+
+            if ((-not $isFull -and $inBlock) -or ($isFull -and $row -eq $endRow)) {
+                # End of block
+                $blockEndRow = if ($isFull -and $row -eq $endRow) { $row } else { $row - 1 }
+
+                # Time is in the first column of the pool range
+                $startTime = $Sheet.Cells.Item($blockStartRow, $startCol).Text
+                $endTime   = $Sheet.Cells.Item($blockEndRow,   $startCol).Text
+
+                # Extract start and end from time format: "06:00 - 07:00"
+                $startPart = $startTime -replace '\s*-\s*.*', ''
+                $endPart   = $endTime   -replace '.*-\s*', ''
+
+                $startDateTime = [datetime]::ParseExact("$($today.ToString('yyyy-MM-dd')) $startPart", 'yyyy-MM-dd HH:mm', $null)
+                $endDateTime   = [datetime]::ParseExact("$($today.ToString('yyyy-MM-dd')) $endPart",   'yyyy-MM-dd HH:mm', $null)
+
+                $blockedRanges += [PSCustomObject]@{
+                    Start = $startDateTime
+                    End   = $endDateTime
+                }
+                $inBlock = $false
+                $blockStartRow = $null
+            }
+        }
+
+        $results += [PSCustomObject]@{
+            PoolName       = $pool.Name
+            BlockedRanges  = $blockedRanges
+        }
+    }
+
+    return $results
+}
