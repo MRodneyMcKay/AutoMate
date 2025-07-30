@@ -45,20 +45,20 @@ $messages = @{
         Text  = "Az 50 méteres medence foglalt"
     }
     "M16_Free" = @{
-        Title = "Bemelegítő medence"
-        Text  = "Az 25 méteres medence felszabadult"
-    }
-     "M16_Occ" = @{
-       Title = "Bemelegítő medence"
-        Text  = "Az 25 méteres medence foglalt"
-    }
-    "M17_Free" = @{
         Title = "Tanmedence"
         Text  = "A tanmedence felszabadult"
     }
-     "M17_Occ" = @{
+    "M16_Occ" = @{
        Title = "Tanmedence"
         Text  = "A tanmedence foglalt"
+    }
+    "M17_Free" = @{
+        Title = "Bemelegítő medence"
+        Text  = "Az 25 méteres medence felszabadult"
+    }
+    "M17_Occ" = @{
+        Title = "Tanmedence""Bemelegítő medence"
+        Text  = "Az 25 méteres medence foglalt"
     }
     "M09_Free" = @{
         Title = "Kalandmedence"
