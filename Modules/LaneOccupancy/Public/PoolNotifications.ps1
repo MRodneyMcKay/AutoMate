@@ -36,21 +36,21 @@ function Show-LaneMessage {
 }
 
 $messages = @{
-     "M09_Free" = @{
+    "M09_Free" = @{
         Title = "Kalandmedence"
         Text  = "A Kalandmedence felszabadult"
     }
     "M15_Free" = @{
         Title = "Versenymedence"
-        Text  = "Az 50 méteres medence felszabadult"
+        Text  = "Az 50 méteres úszómedence felszabadult"
     }
     "M16_Free" = @{
         Title = "Tanmedence"
-        Text  = "A tanmedence úszómedence felszabadult"
+        Text  = "A tanmedence felszabadult"
     }
     "M17_Free" = @{
         Title = "Bemelegítőmedence"
-        Text  = "Az 25 méteres úszómedence felszabadult"
+        Text  = "A 25 méteres úszómedence felszabadult"
     }
     "M09_Occ" = @{
         Title = "Kalandmedence"
@@ -66,7 +66,7 @@ $messages = @{
     }    
     "M17_Occ" = @{
         Title = "Bemelegítőmedence"
-        Text  = "Az 25 méteres úszómedence foglalt"
+        Text  = "A 25 méteres úszómedence foglalt"
     }
 }
 
