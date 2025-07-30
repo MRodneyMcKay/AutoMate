@@ -25,6 +25,7 @@ Import-Module (Join-Path -Path $resolvedModulegPath -ChildPath 'RosterInformatio
 Import-Module (Join-Path -Path $resolvedModulegPath -ChildPath 'CreateMaintanenceDir\CreateMaintanenceDir.psd1')
 Import-Module (Join-Path -Path $resolvedModulegPath -ChildPath 'StudentWorkReport\StudentWorkReport.psd1')
 Import-Module (Join-Path -Path $resolvedModulegPath -ChildPath 'OpenEmails\OpenEmails.psd1')
+Import-Module (Join-Path -Path $resolvedModulegPath -ChildPath 'LaneOccupancy\LaneOccupancy.psd1')
 
 create-Directories
 
@@ -50,5 +51,13 @@ if ($(Get-ItemPropertyValue -Path $registryPath -Name YesterdaysWorkingHours) -n
 }
 
 Start-Process msedge
+
+if ($(Get-ItemPropertyValue -Path $registryPath -Name LaneSchedulePrinted) -ne (Get-Date).Day) {
+    Write-Log -Message "Pályabeosztás nyomtatása"
+    Print-Today
+    Set-ItemProperty -Path $registryPath -Name LaneSchedulePrinted -value (Get-Date).Day
+} else {
+    Write-Log -Message "Pályabeosztás már nyomtatva volt"
+}
 
 Set-ItemProperty -Path $registryPath -Name LastRun -value (Get-Date).Day
