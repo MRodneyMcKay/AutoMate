@@ -15,6 +15,48 @@
     along with this program. If not, see <https://www.gnu.org/licenses/>.  
 #>
 
+function Print-Today {
+
+    $excel = New-Object -ComObject Excel.Application
+    $excel.Visible = $false
+    $excel.DisplayAlerts = $false
+
+    $filename = Get-TodaysScheduleFile
+    if (-not $filename) {
+        "No schedule file found for today."
+        return
+    }
+
+    $workbook = $excel.Workbooks.Open((Get-TodaysScheduleFile))
+    $worksheet =  $workbook.Sheets.Item(1)
+    $poolRanges = Get-PoolRanges -Sheet $worksheet | Select-Object -First 1
+    $rangeInfo = "A$($poolRanges.StartRow-2):W$($poolRanges.EndRow)"
+    $range =  $worksheet.Range($rangeInfo)
+    $range.Select()
+    $pageSetup = $worksheet.PageSetup
+        if (-not $pageSetup) {
+            throw "PageSetup object not accessible."
+        }
+
+        # Set print area and settings
+        $pageSetup.PrintArea = $range.Address($false, $false)
+        $pageSetup.FitToPagesWide = 1
+        $pageSetup.FitToPagesTall = 1
+        $pageSetup.Zoom = $false
+
+        # Set margins to zero
+        $pageSetup.LeftMargin   = 0
+        $pageSetup.RightMargin  = 0
+        $pageSetup.TopMargin    = 0
+        $pageSetup.BottomMargin = 0
+
+    # Print the range
+    $worksheet.PrintOut()
+    $workbook.Close($false)
+    $excel.Quit()
+    [System.Runtime.Interopservices.Marshal]::ReleaseComObject($excel) | Out-Null
+}
+
 function Get-Occupancies {
 
     $excel = New-Object -ComObject Excel.Application
