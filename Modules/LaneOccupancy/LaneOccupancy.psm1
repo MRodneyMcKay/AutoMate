@@ -25,6 +25,6 @@ Import-Module (Join-Path -Path $PSScriptRoot -ChildPath '..\LoggingSystem\Loggin
 #import public functions
 . $PSScriptRoot\Public\laneoccupancy.ps1
 
-Export-ModuleMember -Function Get-Occupancies, Set-Triggers
+Export-ModuleMember -Function Print-Today, Get-Occupancies, Set-Triggers
 
 Write-Log -Message "Module loaded: LaneOccupancy"

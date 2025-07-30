@@ -15,3 +15,10 @@
     along with this program. If not, see <https://www.gnu.org/licenses/>.  
 #>
 
+$ModulePath = Join-Path -Path $PSScriptRoot -ChildPath "..\Modules\"
+$resolvedModulegPath = (Resolve-Path -Path $ModulePath).Path
+
+Import-Module (Join-Path -Path $resolvedModulegPath -ChildPath 'LoggingSystem\LoggingSystem.psd1')
+Import-Module (Join-Path -Path $resolvedModulegPath -ChildPath 'LaneOccupancy\LaneOccupancy.psd1')
+
+Print-Today
