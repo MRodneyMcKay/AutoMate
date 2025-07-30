@@ -116,5 +116,63 @@
       "ScriptPath": "$PSScriptRoot\\Scripts\\applyTheme.ps1",
       "Triggers": [],
       "Description": "Runs the ToggleTheme script manually or when triggered by other means."
+    },
+    {
+      "TaskName": "M09_Free",
+      "ScriptPath": "$PSScriptRoot\\Modules\\LaneOccupancy\\Public\\PoolNotifications.ps1\" -MessageID \"M09_Free",
+      "Triggers": [],
+      "Description": "Runs the Pop up message for M09 pool."
+    },
+    {
+      "TaskName": "M09_Occ",
+      "ScriptPath": "$PSScriptRoot\\Modules\\LaneOccupancy\\Public\\PoolNotifications.ps1\" -MessageID \"M09_Occ",
+      "Triggers": [],
+      "Description": "Runs the Pop up message for M09 pool."
+    },
+    {
+      "TaskName": "M15_Free",
+      "ScriptPath": "$PSScriptRoot\\Modules\\LaneOccupancy\\Public\\PoolNotifications.ps1\" -MessageID \"M15_Free",
+      "Triggers": [],
+      "Description": "Runs the Pop up message for M15 pool."
+    },
+    {
+      "TaskName": "M15_Occ",
+      "ScriptPath": "$PSScriptRoot\\Modules\\LaneOccupancy\\Public\\PoolNotifications.ps1\" -MessageID \"M15_Occ",
+      "Triggers": [],
+      "Description": "Runs the Pop up message for M15 pool."
+    },
+    {
+      "TaskName": "M16_Free",
+      "ScriptPath": "$PSScriptRoot\\Modules\\LaneOccupancy\\Public\\PoolNotifications.ps1\" -MessageID \"M16_Free",
+      "Triggers": [],
+      "Description": "Runs the Pop up message for M16 pool."
+    },
+    {
+      "TaskName": "M16_Occ",
+      "ScriptPath": "$PSScriptRoot\\Modules\\LaneOccupancy\\Public\\PoolNotifications.ps1\" -MessageID \"M16_Occ",
+      "Triggers": [],
+      "Description": "Runs the Pop up message for M16 pool."
+    },
+   {
+      "TaskName": "M17_Free",
+      "ScriptPath": "$PSScriptRoot\\Modules\\LaneOccupancy\\Public\\PoolNotifications.ps1\" -MessageID \"M17_Free",
+      "Triggers": [],
+      "Description": "Runs the Pop up message for M17 pool."
+    },
+    {
+      "TaskName": "M17_Occ",
+      "ScriptPath": "$PSScriptRoot\\Modules\\LaneOccupancy\\Public\\PoolNotifications.ps1\" -MessageID \"M17_Occ",
+      "Triggers": [],
+      "Description": "Runs the Pop up message for M17 pool."
+    },
+    {
+      "TaskName": "RunPalyabeosztasAtLogon",
+      "ScriptPath": "$PSScriptRoot\\Scripts\\palyabeosztas.ps1",
+      "Triggers": [
+        {
+          "TriggerType": "AtLogOn"
+        }
+      ],
+      "Description": "Runs the pop up scheduler script for lane schedules at user login."
     }
   ]
