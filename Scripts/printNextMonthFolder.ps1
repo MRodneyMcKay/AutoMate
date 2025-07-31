@@ -34,11 +34,11 @@ $TaskGroups = @(
     @{
         Header = "Front Office"
         Tasks = @{
-            "Igények" = {
+            "Igények - Front Office" = {
                 Write-Log "Printing schedule requests for the front office"
                 Print-RequestFrontOffice
             }
-            "Jelenléti ív" = {
+            "Jelenléti ív - Front Office" = {
                 Write-Log "Printing attendance sheets for the front office"
                 Print-AttandanceSheetFrontOffice -OpenFile $path
             }
@@ -47,11 +47,11 @@ $TaskGroups = @(
     @{
         Header = "Fürdő"
         Tasks = @{
-            "Igények" = {
+            "Igények - Fürdő" = {
                 Write-Log "Printing schedule requests for the staff"
                 Print-RequestUszomester
             }
-            "Jelenléti ív" = {
+            "Jelenléti ív - Fürdő" = {
                 Write-Log "Printing attendance sheets for the staff"
                 Print-AttandanceSheetUszomester -OpenFile $path
             }
@@ -64,7 +64,7 @@ $TaskGroups = @(
     @{
         Header = "Karbantartók"
         Tasks = @{
-            "Jelenléti ív" = {
+            "Jelenléti ív - Karbantartó" = {
                 Write-Log "Printing attendance sheets for the genitors"
                 Print-AttandanceSheetKarbantarto -OpenFile $path
             }
@@ -73,7 +73,7 @@ $TaskGroups = @(
     @{
         Header = "Vízgépész"
         Tasks = @{
-            "Jelenléti ív" = {
+            "Jelenléti ív - Gépész" = {
                 Write-Log "Printing attendance sheets for the pool technicians"
                 Print-AttandanceSheetGepesz -OpenFile $path
             }
