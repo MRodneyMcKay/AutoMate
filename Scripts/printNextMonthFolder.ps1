@@ -15,26 +15,154 @@
     along with this program. If not, see <https://www.gnu.org/licenses/>.  
 #>
 
+Add-Type -AssemblyName PresentationFramework
+Add-Type -AssemblyName PresentationCore
+Add-Type -AssemblyName WindowsBase
+Add-Type -AssemblyName System.Xaml
+
+# Load modules and get file path
 $ModulePath = Join-Path -Path $PSScriptRoot -ChildPath "..\Modules\"
-$resolvedModulegPath = (Resolve-Path -Path $ModulePath).Path
-Import-Module (Join-Path -Path $resolvedModulegPath -ChildPath 'LoggingSystem\LoggingSystem.psd1')
-Import-Module (Join-Path -Path $resolvedModulegPath -ChildPath 'PrintNextMonthFolder\PrintNextMonthFolder.psd1')
+$resolvedModulePath = (Resolve-Path -Path $ModulePath).Path
+
+Import-Module (Join-Path -Path $resolvedModulePath -ChildPath 'LoggingSystem\LoggingSystem.psd1')
+Import-Module (Join-Path -Path $resolvedModulePath -ChildPath 'PrintNextMonthFolder\PrintNextMonthFolder.psd1')
 
 $path = Get-SheetPath
 
-Write-Log -Message "Printing scedule requests for the front office"
-Print-RequestFrontOffice
-Write-Log -Message "Printing attendance sheets for the front office"
-Print-AttandanceSheetFrontOffice -OpenFile $path
+# Define task groups
+$TaskGroups = @(
+    @{
+        Header = "Front Office"
+        Tasks = @{
+            "Igények - Front Office" = {
+                Write-Log "Printing schedule requests for the front office"
+                Print-RequestFrontOffice
+            }
+            "Jelenléti ív - Front Office" = {
+                Write-Log "Printing attendance sheets for the front office"
+                Print-AttandanceSheetFrontOffice -OpenFile $path
+            }
+        }
+    },
+    @{
+        Header = "Fürdő"
+        Tasks = @{
+            "Igények - Fürdő" = {
+                Write-Log "Printing schedule requests for the staff"
+                Print-RequestUszomester
+            }
+            "Jelenléti ív - Fürdő" = {
+                Write-Log "Printing attendance sheets for the staff"
+                Print-AttandanceSheetUszomester -OpenFile $path
+            }
+            "Utazási támogatás" = {
+                Write-Log "Printing commuting allowance"
+                Print-CommutingAllowance
+            }            
+        }
+    },
+    @{
+        Header = "Karbantartók"
+        Tasks = @{
+            "Jelenléti ív - Karbantartó" = {
+                Write-Log "Printing attendance sheets for the genitors"
+                Print-AttandanceSheetKarbantarto -OpenFile $path
+            }
+        }
+    },
+    @{
+        Header = "Vízgépész"
+        Tasks = @{
+            "Jelenléti ív - Gépész" = {
+                Write-Log "Printing attendance sheets for the pool technicians"
+                Print-AttandanceSheetGepesz -OpenFile $path
+            }
+        }
+    }
+)
 
-Write-Log -Message "Printing scedule requests for the staff"
-Print-RequestUszomester
-Write-Log -Message "Printing commuting allowance"
-Print-CommutingAllowance
-Write-Log -Message "Printing attendance sheets for the staff"
-Print-AttandanceSheetUszomester -OpenFile $path
+# XAML layout
+[xml]$XAML = @"
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        Title="Print Manager" Height="550" Width="440" WindowStartupLocation="CenterScreen">
+    <DockPanel Margin="10">
+        <StackPanel  DockPanel.Dock="Top">
+            <CheckBox Name="SelectAllBox" Content="Select All" Margin="0,0,0,10" />
+            <ScrollViewer VerticalScrollBarVisibility="Disabled">
+                <StackPanel Name="TaskList" />
+            </ScrollViewer>
+        </StackPanel>
 
-Write-Log -Message "Printing attendance sheets for the genitors"
-Print-AttandanceSheetKarbantarto -OpenFile $path
-Write-Log -Message "Printing attendance sheets for the pool technicians"
-Print-AttandanceSheetGepesz -OpenFile $path
+        <Button DockPanel.Dock="Top" Name="RunButton" Height="40" Margin="0,10,0,10" Content="Nyomtatás" />
+
+        <TextBox Name="LogBox" DockPanel.Dock="Bottom" Margin="0,10,0,0"
+                 IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"/>
+    </DockPanel>
+</Window>
+"@
+
+# Load XAML and connect elements
+$reader = (New-Object System.Xml.XmlNodeReader $XAML)
+$Window = [Windows.Markup.XamlReader]::Load($reader)
+
+$TaskList = $Window.FindName("TaskList")
+$RunButton = $Window.FindName("RunButton")
+$LogBox = $Window.FindName("LogBox")
+$SelectAllBox = $Window.FindName("SelectAllBox")
+
+# Store all tasks and checkboxes
+$Tasks = @{}
+$CheckBoxes = @{}
+
+# Add UI elements by section
+foreach ($group in $TaskGroups) {
+    # Header
+    $header = New-Object System.Windows.Controls.TextBlock
+    $header.Text = $group.Header
+    $header.FontWeight = 'Bold'
+    $header.Margin = '0,10,0,2'
+    $TaskList.Children.Add($header)
+
+    # Separator
+    $sep = New-Object System.Windows.Controls.Separator
+    $sep.Margin = '0,0,0,10'
+    $TaskList.Children.Add($sep)
+
+    # Task checkboxes
+    foreach ($taskName in $group.Tasks.Keys) {
+        $cb = New-Object System.Windows.Controls.CheckBox
+        $cb.Content = $taskName
+        $cb.Margin = '0,5,0,5'
+        $TaskList.Children.Add($cb)
+        $CheckBoxes[$taskName] = $cb
+        $Tasks[$taskName] = $group.Tasks[$taskName]
+    }
+}
+
+# Select All checkbox behavior
+$SelectAllBox.Add_Checked({
+    foreach ($cb in $CheckBoxes.Values) { $cb.IsChecked = $true }
+})
+$SelectAllBox.Add_Unchecked({
+    foreach ($cb in $CheckBoxes.Values) { $cb.IsChecked = $false }
+})
+
+# Run button behavior
+$RunButton.Add_Click({
+    foreach ($taskName in $Tasks.Keys) {
+        if ($CheckBoxes[$taskName].IsChecked) {
+            try {
+                $LogBox.AppendText("Running: ${taskName}`n")
+                & $Tasks[$taskName]
+                $LogBox.AppendText("Done: ${taskName}`n`n")
+            } catch {
+                $LogBox.AppendText("Error in ${taskName}: $($_.Exception.Message)`n`n")
+            }
+        }
+    }
+    $LogBox.ScrollToEnd()
+})
+
+# Show window
+$Window.Topmost = $true
+$Window.ShowDialog() | Out-Null
