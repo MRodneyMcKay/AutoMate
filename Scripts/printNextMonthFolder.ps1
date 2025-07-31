@@ -78,6 +78,15 @@ $TaskGroups = @(
                 Print-AttandanceSheetGepesz -OpenFile $path
             }
         }
+    },
+    @{
+        Header = "Gyógyászat"
+        Tasks = @{
+            "Jelenléti ív - Gyógyászat" = {
+                Write-Log "Printing attendance sheets for the mediacal department"
+                Print-AttandanceSheetGyogyaszat -OpenFile $path
+            }
+        }
     }
 )
 
@@ -94,9 +103,6 @@ $TaskGroups = @(
         </StackPanel>
 
         <Button DockPanel.Dock="Top" Name="RunButton" Height="40" Margin="0,10,0,10" Content="Nyomtatás" />
-
-        <TextBox Name="LogBox" DockPanel.Dock="Bottom" Margin="0,10,0,0"
-                 IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"/>
     </DockPanel>
 </Window>
 "@
