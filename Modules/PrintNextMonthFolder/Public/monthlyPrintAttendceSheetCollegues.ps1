@@ -126,6 +126,30 @@ function Print-AttandanceSheetFrontOffice {
     [gc]::WaitForPendingFinalizers()
 }
 
+function Print-AttandanceSheetGyogyaszat {
+    param (
+        [string]$OpenFile
+    )
+
+    Set-PrinterDuplexMode -DuplexingMode "TwoSidedLongEdge"
+    
+    # Open Excel workbook
+    $Excel = New-Object -ComObject Excel.Application
+    $Excel.Visible = $false
+    $Workbook = $Excel.Workbooks.Open($OpenFile)
+    Print-Worksheet -Worksheet $Workbook.Sheets.Item("Jegypénztár, recepció") `
+    -HeaderText "Kecskeméti Fürdő" `
+    -CsvPath "C:\Users\Hirossport\Hiros Sport Nonprofit Kft\Hiros-sport - Dokumentumok\Furdo\Recepcio\Nyomtatni\Jelenlétik, igények\Gyógyászat.csv"
+
+    # Close workbook and clean up
+    $Workbook.Close($false)
+    $Excel.Quit()
+    [void][System.Runtime.InteropServices.Marshal]::ReleaseComObject($Excel)
+
+    [gc]::Collect()
+    [gc]::WaitForPendingFinalizers()
+}
+
 function Print-AttandanceSheetKarbantarto {
     param (
         [string]$OpenFile
