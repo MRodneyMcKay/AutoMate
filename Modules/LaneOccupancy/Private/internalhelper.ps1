@@ -53,7 +53,7 @@ function Get-TodaysScheduleFile {
             continue # Doesn't match any known pattern
         }
 
-        if ($today -ge $startDate -and $today -le $endDate) {
+        if ($today.Date -ge $startDate.Date -and $today.Date -le $endDate.Date) {
             Write-Log -Message "Found matching schedule file: $($file.FullName)"
             return $file.FullName
         }
