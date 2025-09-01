@@ -82,6 +82,10 @@ $TaskGroups = @(
     @{
         Header = "Gyógyászat"
         Tasks = @{
+            "Igények - Gyógyászat" = {
+                Write-Log "Printing schedule requests for the medical department"
+                Print-RequestGyogyaszat
+            }
             "Jelenléti ív - Gyógyászat" = {
                 Write-Log "Printing attendance sheets for the mediacal department"
                 Print-AttandanceSheetGyogyaszat -OpenFile $path
@@ -93,7 +97,7 @@ $TaskGroups = @(
 # XAML layout
 [xml]$XAML = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        Title="Print Manager" Height="550" Width="440" WindowStartupLocation="CenterScreen">
+        Title="Print Manager" Height="600" Width="440" WindowStartupLocation="CenterScreen">
     <DockPanel Margin="10">
         <StackPanel  DockPanel.Dock="Top">
             <CheckBox Name="SelectAllBox" Content="Select All" Margin="0,0,0,10" />
