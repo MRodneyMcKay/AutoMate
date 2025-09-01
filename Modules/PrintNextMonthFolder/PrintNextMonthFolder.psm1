@@ -27,6 +27,6 @@ Import-Module (Join-Path -Path $PSScriptRoot -ChildPath '..\LoggingSystem\Loggin
 . $PSScriptRoot\Public\monthlyPrintAttendceSheetCollegues.ps1
 . $PSScriptRoot\Public\MonthlyCommutingAllowancePrint.ps1
 
-Export-ModuleMember -Function Get-SheetPath, Print-RequestFrontOffice, Print-RequestUszomester, Print-AttandanceSheetGepesz, Print-AttandanceSheetKarbantarto, Print-AttandanceSheetFrontOffice, Print-AttandanceSheetGyogyaszat, Print-AttandanceSheetUszomester, Print-CommutingAllowance
+Export-ModuleMember -Function Get-SheetPath, Print-RequestFrontOffice, Print-RequestUszomester, Print-RequestGyogyaszat, Print-AttandanceSheetGepesz, Print-AttandanceSheetKarbantarto, Print-AttandanceSheetFrontOffice, Print-AttandanceSheetGyogyaszat, Print-AttandanceSheetUszomester, Print-CommutingAllowance
 
 Write-Log -Message "Module loaded: PrintNextMonthFolder"
