@@ -86,8 +86,8 @@ function Get-PageRange {
         [int]$StartMultiplier,
         [int]$EndMultiplier
     )
-    $Start = (($MonthOffset + (Get-Date).Month) * 4) + $StartMultiplier
-    $End = (($MonthOffset + (Get-Date).Month) * 4) + $EndMultiplier
+    $Start = (($MonthOffset + (Get-Date).Month) * 6) + $StartMultiplier
+    $End = (($MonthOffset + (Get-Date).Month) * 6) + $EndMultiplier
     return "$Start-$End"
 }
 
@@ -124,4 +124,11 @@ function Print-RequestFrontOffice {
         [string]$FilePath = "C:\Users\Hirossport\Hiros Sport Nonprofit Kft\Hiros-sport - Dokumentumok\Furdo\Recepcio\Nyomtatni\Jelenlétik, igények\Igények.docx"
     )
     Print-Igeny -FilePath $FilePath -StartMultiplier 3 -EndMultiplier 4
+}
+
+function Print-RequestGyogyaszat {
+    param (
+        [string]$FilePath = "C:\Users\Hirossport\Hiros Sport Nonprofit Kft\Hiros-sport - Dokumentumok\Furdo\Recepcio\Nyomtatni\Jelenlétik, igények\Igények.docx"
+    )
+    Print-Igeny -FilePath $FilePath -StartMultiplier 5 -EndMultiplier 6
 }
