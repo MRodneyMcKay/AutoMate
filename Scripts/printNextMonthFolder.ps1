@@ -113,7 +113,6 @@ $Window = [Windows.Markup.XamlReader]::Load($reader)
 
 $TaskList = $Window.FindName("TaskList")
 $RunButton = $Window.FindName("RunButton")
-$LogBox = $Window.FindName("LogBox")
 $SelectAllBox = $Window.FindName("SelectAllBox")
 
 # Store all tasks and checkboxes
@@ -158,15 +157,14 @@ $RunButton.Add_Click({
     foreach ($taskName in $Tasks.Keys) {
         if ($CheckBoxes[$taskName].IsChecked) {
             try {
-                $LogBox.AppendText("Running: ${taskName}`n")
+                Write-Log "Running: ${taskName}"
                 & $Tasks[$taskName]
-                $LogBox.AppendText("Done: ${taskName}`n`n")
+                Write-Log "Done: ${taskName}"
             } catch {
-                $LogBox.AppendText("Error in ${taskName}: $($_.Exception.Message)`n`n")
+                Write-Log "Error in ${taskName}: $($_.Exception.Message)" -Level Error
             }
         }
     }
-    $LogBox.ScrollToEnd()
 })
 
 # Show window
