@@ -13,3 +13,4 @@
 # Allow Git-related files
 !.gitignore
 !.gitattributes
+.vscode/settings.json
