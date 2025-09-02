@@ -36,7 +36,7 @@ function Find-File {
         $OpenFileDialog.filter = "Minden Excel fájl|*.xls;*.xlsx;*.xlsm"
         $OpenFileDialog.Title = $PromptTitle
         $OpenFileDialog.ShowDialog() |  Out-Null
-        $items = Get-ChildItem $Directory | Where-Object Name -match $OpenFileDialog.SafeFileName
+        $items = Get-ChildItem $Directory | Where-Object { $_.Name.Normalize() -eq $OpenFileDialog.SafeFileName.Normalize() }
         Write-Log -Message "Fájl kiválasztva: $($items.FullName)"
         return $items.FullName
     }
