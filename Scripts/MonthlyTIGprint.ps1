@@ -1,18 +1,18 @@
-<#  
-    This file is part of AutoMate.  
+<#
+    This file is part of AutoMate.
 
-    AutoMate is free software: you can redistribute it and/or modify  
-    it under the terms of the GNU General Public License as published by  
-    the Free Software Foundation, either version 3 of the License, or  
-    (at your option) any later version.  
+    AutoMate is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
 
-    This program is distributed in the hope that it will be useful,  
-    but WITHOUT ANY WARRANTY; without even the implied warranty of  
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the  
-    GNU General Public License for more details.  
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+    GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License  
-    along with this program. If not, see <https://www.gnu.org/licenses/>.  
+    You should have received a copy of the GNU General Public License
+    along with this program. If not, see <https://www.gnu.org/licenses/>.
 #>
 
 $ModulePath = Join-Path -Path $PSScriptRoot -ChildPath "..\Modules\"
@@ -46,6 +46,7 @@ function Perform-MailMerge {
 
     $Word = New-Object -ComObject Word.Application
     $Word.Visible = $false
+
     try {
         $doc = $Word.Documents.Open($DocumentPath)
         if ($doc) {
@@ -57,17 +58,41 @@ function Perform-MailMerge {
         Write-Log -Message "Failed to open document: $DocumentPath" -Level "ERROR"
         return
     }
+
     $mailMerge = $doc.MailMerge
     $mailMerge.OpenDataSource($DataSourcePath)
     $mailMerge.Destination = [Microsoft.Office.Interop.Word.WdMailMergeDestination]::wdSendToNewDocument
     $mailMerge.Execute($true)
 
+    foreach ($tbl in  $Word.ActiveDocument.Tables) {
+        $tableRange = $tbl.Range
+        $start = [Math]::Max(0, $tableRange.Start - 500)
+        $end = [Math]::Min( $Word.ActiveDocument.Content.End, $tableRange.End + 500)
+        $contextRange =  $Word.ActiveDocument.Range($start, $end)
+        $contextText = $contextRange.Text
+
+        if ($contextText -like "*Kecskeméti Piarista Gimnázium*") {
+            try {
+                $tbl.Columns.Item(3).Select() # Select the 3rd column
+
+                    # Insert a column before the selected column
+                    $Word.Selection.InsertColumns() 
+
+                    $tbl.Cell(1, 3).Range.Text = "Osztály"
+                    Write-Log -Message "Inserted 'Osztály' column in table near Piarista text." -Level "INFO"
+            } catch {
+                Write-Log -Message "Failed to modify table near Piarista text. Error: $_" -Level "WARNING"
+            }
+        }
+    }
+
     return @{
-        Word = $Word
-        Document = $Word.ActiveDocument
+        Word             = $Word
+        Document         = $Word.ActiveDocument
         OriginalDocument = $doc
     }
 }
+
 
 # Generate the page range string
 function Generate-PageRange {
@@ -121,18 +146,23 @@ function Cleanup-WordObjects {
     [System.Runtime.Interopservices.Marshal]::ReleaseComObject($OriginalDocument) | Out-Null
     [System.Runtime.Interopservices.Marshal]::ReleaseComObject($Document) | Out-Null
     [System.Runtime.Interopservices.Marshal]::ReleaseComObject($Word) | Out-Null
+
+    Remove-Item -Path "$env:USERPROFILE\Desktop\MergedDocument.docx" -ErrorAction SilentlyContinue
+
 }
 
 # Main script logic
-[System.Reflection.Assembly]::LoadFrom([System.Environment]::GetEnvironmentVariable("OfficeAssemblies_Word", [System.EnvironmentVariableTarget]::User)) 
+[System.Reflection.Assembly]::LoadFrom(
+    [System.Environment]::GetEnvironmentVariable("OfficeAssemblies_Word", [System.EnvironmentVariableTarget]::User)
+)
 
-$defaultPrinter = Get-DefaultPrinter
 $documentPath = "C:\Users\Hirossport\Hiros Sport Nonprofit Kft\Hiros-sport - Dokumentumok\Furdo\Recepcio\Nyomtatni\TIG jelenléti ív_2025.docx"
 $dataSourcePath = "C:\Users\Hirossport\Hiros Sport Nonprofit Kft\Hiros-sport - Dokumentumok\Furdo\Recepcio\Nyomtatni\TIG csoportok.csv"
 
 $mailMergeResult = Perform-MailMerge -DocumentPath $documentPath -DataSourcePath $dataSourcePath
-$mergedDocument = $mailMergeResult.Document
-$Word = $mailMergeResult.Word
+
+$mergedDocument   = $mailMergeResult.Document
+$Word             = $mailMergeResult.Word
 $OriginalDocument = $mailMergeResult.OriginalDocument
 
 $month = (Get-Date).Month + 1
