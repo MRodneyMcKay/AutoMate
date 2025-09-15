@@ -27,10 +27,10 @@ function Test-Schoolday {
     }
 
     $schooldayRanges = @(
-        [PSCustomObject]@{ Start = '2024-10-26'; End = '2024-11-03' },
-        [PSCustomObject]@{ Start = '2024-12-21'; End = '2025-01-05' },
-        [PSCustomObject]@{ Start = '2025-04-17'; End = '2025-04-27' },
-        [PSCustomObject]@{ Start = '2025-06-21'; End = '2025-08-31' }
+        [PSCustomObject]@{ Start = '2025-10-23'; End = '2025-11-02' },
+        [PSCustomObject]@{ Start = '2025-12-20'; End = '2026-01-04' },
+        [PSCustomObject]@{ Start = '2026-04-02'; End = '2026-04-12' },
+        [PSCustomObject]@{ Start = '2026-06-20'; End = '2026-08-31' }
     )
 
     foreach ($range in $schooldayRanges) {
@@ -60,7 +60,7 @@ function Test-Summercamp {
     }
 
     $summerRange = @(
-        [PSCustomObject]@{ Start = '2025-06-23'; End = '2025-07-31' }
+        [PSCustomObject]@{ Start = '2026-06-23'; End = '2026-07-31' }
     )
 
     if ($date -ge (Get-Date $summerRange.Start) -and $date -le (Get-Date $summerRange.End)) {
