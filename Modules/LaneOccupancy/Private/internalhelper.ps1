@@ -179,12 +179,40 @@ function Get-BlockedPoolTimeRanges {
             $isFull = $true
 
             for ($col = $startCol + 1; $col -le $endCol; $col++) {  # Skip time column
-                $cellVal = $Sheet.Cells.Item($row, $col).Text
+                $cell = $Sheet.Cells.Item($row, $col)
+                $cellVal = $null
+
+                if ($cell.MergeCells) {
+                    $mergeArea = $cell.MergeArea
+
+                    # pick the first column inside this merged area that belongs to the pool's lane columns
+                    $firstLaneCol = [Math]::Max($startCol + 1, $mergeArea.Column)
+                    $relativeColIndex = $firstLaneCol - $mergeArea.Column + 1
+
+                    # safety: clamp the relative index to merge area's column count
+                    if ($relativeColIndex -lt 1) { $relativeColIndex = 1 }
+                    if ($relativeColIndex -gt $mergeArea.Columns.Count) { $relativeColIndex = $mergeArea.Columns.Count }
+
+                    # read the text from that cell inside the merge area
+                    $cellVal = $mergeArea.Cells.Item(1, $relativeColIndex).Text
+
+                    # compute the merge end column and skip ahead to it (clamped to pool end)
+                    $mergeEndCol = $mergeArea.Column + $mergeArea.Columns.Count - 1
+                    if ($mergeEndCol -gt $endCol) { $mergeEndCol = $endCol }
+                    $col = $mergeEndCol
+                }
+                else {
+                    $cellVal = $cell.Text
+                }
+
+                # normalise non-breaking spaces and check emptiness
+                if ($cellVal -ne $null) { $cellVal = $cellVal -replace [char]160, '' }
+
                 if ([string]::IsNullOrWhiteSpace($cellVal)) {
                     $isFull = $false
                     break
                 }
-            }
+            } # end col loop
 
             if ($isFull -and -not $inBlock) {
                 $inBlock = $true
@@ -210,16 +238,18 @@ function Get-BlockedPoolTimeRanges {
                     Start = $startDateTime
                     End   = $endDateTime
                 }
+
                 $inBlock = $false
                 $blockStartRow = $null
             }
-        }
+        } # end row loop
 
         $results += [PSCustomObject]@{
             PoolName       = $pool.Name
             BlockedRanges  = $blockedRanges
         }
-    }
+    } # end pools
 
     return $results
 }
+
