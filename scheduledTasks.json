@@ -118,6 +118,18 @@
       "Description": "Runs the ToggleTheme script manually or when triggered by other means."
     },
     {
+      "TaskName": "M02_Free",
+      "ScriptPath": "$PSScriptRoot\\Modules\\LaneOccupancy\\Public\\PoolNotifications.ps1\" -MessageID \"M02_Free",
+      "Triggers": [],
+      "Description": "Runs the Pop up message for M09 pool."
+    },
+    {
+      "TaskName": "M02_Occ",
+      "ScriptPath": "$PSScriptRoot\\Modules\\LaneOccupancy\\Public\\PoolNotifications.ps1\" -MessageID \"M02_Occ",
+      "Triggers": [],
+      "Description": "Runs the Pop up message for M09 pool."
+    },
+    {
       "TaskName": "M09_Free",
       "ScriptPath": "$PSScriptRoot\\Modules\\LaneOccupancy\\Public\\PoolNotifications.ps1\" -MessageID \"M09_Free",
       "Triggers": [],
