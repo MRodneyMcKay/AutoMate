@@ -104,8 +104,8 @@ function Get-PoolRanges {
     $todayNameHu = $dayMap[$Date.DayOfWeek.ToString()]
 
     $rowCount = $Sheet.UsedRange.Rows.Count
-    $timeCols = @(1, 13, 21)         # A, M, U
-    $lastLaneCols = @(11, 19, 23)    # K, S, W
+    $timeCols = @(1, 13, 21, 25, 29)         # A, M, U, Y, AC
+    $lastLaneCols = @(11, 19, 23, 27, 30)    # K, S, W, AA, AD
     $startRow = $null
     $endRow = $null
 
@@ -169,6 +169,13 @@ function Get-PoolRanges {
         EndRow   = $rangeInfo.EndRow
         StartCol = 25   # Y
         EndCol   = 27   # AA
+    },
+    [PSCustomObject]@{
+        Name     = "M02"
+        StartRow = $rangeInfo.StartRow
+        EndRow   = $rangeInfo.EndRow
+        StartCol = 29   # AC
+        EndCol   = 30   # AD
     }
 )
 }
