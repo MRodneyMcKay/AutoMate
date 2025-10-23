@@ -16,51 +16,71 @@
 #>
 
 function Get-TodaysScheduleFile {
-     param (
-        $today = (Get-Date)
+    param (
+        [datetime]$today = (Get-Date)
     )
-    $desktopPath = [Environment]::GetFolderPath("Desktop")
-    
 
-    # Get all matching files on Desktop
+    $desktopPath = [Environment]::GetFolderPath("Desktop")
+
     $files = Get-ChildItem -Path $desktopPath -Filter "Pálya *.xlsx" | Where-Object {
-        $_.BaseName -match "^Pálya .+"
+        $_.BaseName -match "^Pálya"
     }
 
     foreach ($file in $files) {
-        # Strip prefix and suffix
-        $namePart = $file.BaseName -replace "^Pálya ", "" -replace "\.xlsx$", ""
+        $namePart = $file.BaseName -replace "^Pálya\s*", ""
 
-        # Try full cross-year: YYYY.MM.dd.-YYYY.MM.dd.
-        if ($namePart -match "^(\d{4})\.(\d{2})\.(\d{2})-(\d{4})\.(\d{2})\.(\d{2})\.$") {
-            $startDate = Get-Date -Year $matches[1] -Month $matches[2] -Day $matches[3]
-            $endDate   = Get-Date -Year $matches[4] -Month $matches[5] -Day $matches[6]
+        # Normalize: replace spaces with dots, remove duplicate dots
+        $normalized = ($namePart -replace "\s+", ".") -replace "\.\.", "."
+
+        # Fix missing dash if needed
+        if ($normalized -match "^\d{4}\.\d{2}\.\d{2}\.\d{2}$") {
+            $normalized = $normalized -replace "^(\d{4}\.\d{2}\.\d{2})\.(\d{2})$", '$1-$2'
         }
-        # Try same year, full month-day: YYYY.MM.dd.-MM.dd.
-        elseif ($namePart -match "^(\d{4})\.(\d{2})\.(\d{2})-(\d{2})\.(\d{2})\.$") {
-            $year = [int]$matches[1]
-            $startDate = Get-Date -Year $year -Month $matches[2] -Day $matches[3]
-            $endDate   = Get-Date -Year $year -Month $matches[4] -Day $matches[5]
-        }
-        # Try minimal form: YYYY.MM.dd.-DD.
-        elseif ($namePart -match "^(\d{4})\.(\d{2})\.(\d{2})-(\d{2})\.$") {
+
+        # --- PATTERN MATCHES ---
+
+        # YYYY.MM.dd-DD
+        if ($normalized -match "^(\d{4})\.(\d{2})\.(\d{2})-(\d{2})$") {
             $year = [int]$matches[1]
             $month = [int]$matches[2]
             $startDate = Get-Date -Year $year -Month $month -Day $matches[3]
             $endDate   = Get-Date -Year $year -Month $month -Day $matches[4]
         }
+        # YYYY.MM.dd-MM.dd
+        elseif ($normalized -match "^(\d{4})\.(\d{2})\.(\d{2})-(\d{2})\.(\d{2})$") {
+            $year = [int]$matches[1]
+            $startDate = Get-Date -Year $year -Month $matches[2] -Day $matches[3]
+            $endDate   = Get-Date -Year $year -Month $matches[4] -Day $matches[5]
+        }
+        # YYYY.MM.dd-YYYY.MM.dd
+        elseif ($normalized -match "^(\d{4})\.(\d{2})\.(\d{2})-(\d{4})\.(\d{2})\.(\d{2})$") {
+            $startDate = Get-Date -Year $matches[1] -Month $matches[2] -Day $matches[3]
+            $endDate   = Get-Date -Year $matches[4] -Month $matches[5] -Day $matches[6]
+        }
+        # YYYY.MM.dd.MM.dd (no dash, like Pálya 2025.10.27.11.02)
+        elseif ($normalized -match "^(\d{4})\.(\d{2})\.(\d{2})\.(\d{2})\.(\d{2})$") {
+            $year = [int]$matches[1]
+            $startDate = Get-Date -Year $year -Month $matches[2] -Day $matches[3]
+            $endDate   = Get-Date -Year $year -Month $matches[4] -Day $matches[5]
+
+            # Handle month rollover (e.g. 2025.10.27.11.02)
+            if ($endDate -lt $startDate) {
+                $endDate = Get-Date -Year $year -Month $matches[4] -Day $matches[5]
+            }
+        }
         else {
-            continue # Doesn't match any known pattern
+            continue
         }
 
         if ($today.Date -ge $startDate.Date -and $today.Date -le $endDate.Date) {
-            Write-Log -Message "Found matching schedule file: $($file.FullName)"
+            Write-Host "Found matching schedule file: $($file.FullName)"
             return $file.FullName
         }
     }
 
-    throw "No matching schedule file found for today's date ($($today.ToShortDateString()))."
+    throw " No matching schedule file found for today's date ($($today.ToShortDateString()))."
 }
+
 
 function Get-PoolRanges {
     param (
