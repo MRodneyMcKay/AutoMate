@@ -36,6 +36,10 @@ function Show-LaneMessage {
 }
 
 $messages = @{
+    "M02_Free" = @{
+        Title = "Panoráma medence"
+        Text  = "A panoráma medence felszabadult"
+    }
     "M09_Free" = @{
         Title = "Kalandmedence"
         Text  = "A Kalandmedence felszabadult"
@@ -52,6 +56,10 @@ $messages = @{
         Title = "Bemelegítőmedence"
         Text  = "A 25 méteres úszómedence felszabadult"
     }
+    "M02_Occ" = @{
+        Title = "Panoráma medence"
+        Text  = "A panoráma medence foglalt"
+    }  
     "M09_Occ" = @{
         Title = "Kalandmedence"
         Text  = "A Kalandmedence foglalt"
