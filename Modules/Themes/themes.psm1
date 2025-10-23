@@ -31,7 +31,7 @@ function Set-Zsolti {
 }
 
 function Set-Niki {
-    Set-Personalization -AppsUseLightTheme 0 -SystemUsesLightTheme 0 -ColorPrevalence 1 -PicturePath "C:\Windows\Web\Wallpaper\Windows\img3.jpg" -Nickname "Niki"
+    Set-Personalization -AppsUseLightTheme 1 -SystemUsesLightTheme 1 -ColorPrevalence 1 -PicturePath "C:\Windows\Web\Wallpaper\Windows\img3.jpg" -Nickname "Niki"
 }
 
 Export-ModuleMember -Function Set-Default, Set-Zsolti, Set-Niki
