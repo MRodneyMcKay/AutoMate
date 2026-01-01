@@ -22,12 +22,19 @@ function Get-TodaysScheduleFile {
 
     $desktopPath = [Environment]::GetFolderPath("Desktop")
 
-    $files = Get-ChildItem -Path $desktopPath -Filter "Pálya *.xlsx" | Where-Object {
-        $_.BaseName -match "^Pálya"
+    $files = Get-ChildItem -Path $desktopPath -Filter "*.xlsx" | Where-Object {
+        $_.BaseName -match "^(Másolat\s*-\s*)?Pálya"
     }
 
+    $candidates = @()
+
     foreach ($file in $files) {
-        $namePart = $file.BaseName -replace "^Pálya\s*", ""
+
+        $isMasolat = $file.BaseName -match "^Másolat\s*-\s*Pálya"
+
+        # Remove optional "Másolat - " prefix
+        $baseName = $file.BaseName -replace "^Másolat\s*-\s*", ""
+        $namePart = $baseName -replace "^Pálya\s*", ""
 
         # Normalize: replace spaces with dots, remove duplicate dots
         $normalized = ($namePart -replace "\s+", ".") -replace "\.\.", "."
@@ -39,9 +46,12 @@ function Get-TodaysScheduleFile {
 
         # --- PATTERN MATCHES ---
 
+        $startDate = $null
+        $endDate   = $null
+
         # YYYY.MM.dd-DD
         if ($normalized -match "^(\d{4})\.(\d{2})\.(\d{2})-(\d{2})$") {
-            $year = [int]$matches[1]
+            $year  = [int]$matches[1]
             $month = [int]$matches[2]
             $startDate = Get-Date -Year $year -Month $month -Day $matches[3]
             $endDate   = Get-Date -Year $year -Month $month -Day $matches[4]
@@ -49,7 +59,7 @@ function Get-TodaysScheduleFile {
 
         # YYYY.MM.dd-MM.dd
         elseif ($normalized -match "^(\d{4})\.(\d{2})\.(\d{2})-(\d{2})\.(\d{2})$") {
-            $year = [int]$matches[1]
+            $year       = [int]$matches[1]
             $startMonth = [int]$matches[2]
             $startDay   = [int]$matches[3]
             $endMonth   = [int]$matches[4]
@@ -66,7 +76,7 @@ function Get-TodaysScheduleFile {
             $endDate   = Get-Date -Year $matches[4] -Month $matches[5] -Day $matches[6]
         }
 
-        # YYYY.MM.dd.MM.dd  (e.g. Pálya 2025.12.29.01.04)
+        # YYYY.MM.dd.MM.dd
         elseif ($normalized -match "^(\d{4})\.(\d{2})\.(\d{2})\.(\d{2})\.(\d{2})$") {
             $year       = [int]$matches[1]
             $startMonth = [int]$matches[2]
@@ -83,13 +93,28 @@ function Get-TodaysScheduleFile {
         }
 
         if ($today.Date -ge $startDate.Date -and $today.Date -le $endDate.Date) {
-            Write-Host "Found matching schedule file: $($file.FullName)"
-            return $file.FullName
+            $candidates += [PSCustomObject]@{
+                File       = $file
+                IsMasolat  = $isMasolat
+                StartDate  = $startDate
+                EndDate    = $endDate
+            }
         }
     }
 
-    throw "No matching schedule file found for today's date ($($today.ToShortDateString()))."
+    if (-not $candidates) {
+        throw "No matching schedule file found for today's date ($($today.ToShortDateString()))."
+    }
+
+    # Prefer "Másolat -" version
+    $selected = $candidates |
+        Sort-Object IsMasolat -Descending |
+        Select-Object -First 1
+
+    Write-Host "Found matching schedule file: $($selected.File.FullName)"
+    return $selected.File.FullName
 }
+
 
 function Get-PoolRanges {
     param (
