@@ -46,27 +46,37 @@ function Get-TodaysScheduleFile {
             $startDate = Get-Date -Year $year -Month $month -Day $matches[3]
             $endDate   = Get-Date -Year $year -Month $month -Day $matches[4]
         }
+
         # YYYY.MM.dd-MM.dd
         elseif ($normalized -match "^(\d{4})\.(\d{2})\.(\d{2})-(\d{2})\.(\d{2})$") {
             $year = [int]$matches[1]
-            $startDate = Get-Date -Year $year -Month $matches[2] -Day $matches[3]
-            $endDate   = Get-Date -Year $year -Month $matches[4] -Day $matches[5]
+            $startMonth = [int]$matches[2]
+            $startDay   = [int]$matches[3]
+            $endMonth   = [int]$matches[4]
+            $endDay     = [int]$matches[5]
+
+            $startDate = Get-Date -Year $year -Month $startMonth -Day $startDay
+            $endYear   = if ($endMonth -lt $startMonth) { $year + 1 } else { $year }
+            $endDate   = Get-Date -Year $endYear -Month $endMonth -Day $endDay
         }
+
         # YYYY.MM.dd-YYYY.MM.dd
         elseif ($normalized -match "^(\d{4})\.(\d{2})\.(\d{2})-(\d{4})\.(\d{2})\.(\d{2})$") {
             $startDate = Get-Date -Year $matches[1] -Month $matches[2] -Day $matches[3]
             $endDate   = Get-Date -Year $matches[4] -Month $matches[5] -Day $matches[6]
         }
-        # YYYY.MM.dd.MM.dd (no dash, like Pálya 2025.10.27.11.02)
-        elseif ($normalized -match "^(\d{4})\.(\d{2})\.(\d{2})\.(\d{2})\.(\d{2})$") {
-            $year = [int]$matches[1]
-            $startDate = Get-Date -Year $year -Month $matches[2] -Day $matches[3]
-            $endDate   = Get-Date -Year $year -Month $matches[4] -Day $matches[5]
 
-            # Handle month rollover (e.g. 2025.10.27.11.02)
-            if ($endDate -lt $startDate) {
-                $endDate = Get-Date -Year $year -Month $matches[4] -Day $matches[5]
-            }
+        # YYYY.MM.dd.MM.dd  (e.g. Pálya 2025.12.29.01.04)
+        elseif ($normalized -match "^(\d{4})\.(\d{2})\.(\d{2})\.(\d{2})\.(\d{2})$") {
+            $year       = [int]$matches[1]
+            $startMonth = [int]$matches[2]
+            $startDay   = [int]$matches[3]
+            $endMonth   = [int]$matches[4]
+            $endDay     = [int]$matches[5]
+
+            $startDate = Get-Date -Year $year -Month $startMonth -Day $startDay
+            $endYear   = if ($endMonth -lt $startMonth) { $year + 1 } else { $year }
+            $endDate   = Get-Date -Year $endYear -Month $endMonth -Day $endDay
         }
         else {
             continue
@@ -78,9 +88,8 @@ function Get-TodaysScheduleFile {
         }
     }
 
-    throw " No matching schedule file found for today's date ($($today.ToShortDateString()))."
+    throw "No matching schedule file found for today's date ($($today.ToShortDateString()))."
 }
-
 
 function Get-PoolRanges {
     param (
