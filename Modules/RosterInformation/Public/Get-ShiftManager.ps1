@@ -15,37 +15,71 @@
     along with this program. If not, see <https://www.gnu.org/licenses/>.  
 #>
 
-function Get-ShiftManager
-{
+function Get-ShiftManager {
     param (
-        [datetime]$now = $(Get-Date)
+        [datetime]$now = (Get-Date)
     )
-    $today = Get-Date $now
-    $monthName = (Get-Culture).TextInfo.ToTitleCase((Get-Culture).DateTimeFormat.GetMonthName($today.Month))
-    $pattern = '^(' + [regex]::escape($today.Year) +').*(' + [regex]::escape($monthName) + '|' + (Get-Culture).DateTimeFormat.GetMonthName($today.Month) +')(?!.*(azd|ront|beosztás|havi)).*xlsx$'
 
-    $items = Get-ChildItem $([System.Environment]::GetFolderPath("Desktop")) | Where-Object { $_.Name.Normalize() -match ($pattern) } | Sort-Object Name -Descending | Select-Object -First 1
-    if ($items.Count -eq 0) {
+    # Use one consistent culture
+    $culture = Get-Culture
+
+    $today = Get-Date $now
+    $year  = $today.Year
+    $month = $culture.DateTimeFormat.GetMonthName($today.Month)
+
+    # Escape everything used in regex
+    $escapedYear  = [regex]::escape($year)
+    $escapedMonth = [regex]::escape($month)
+
+    # Build regex pattern
+    $pattern = '^' +
+        $escapedYear +
+        '.*' +
+        $escapedMonth +
+        '(?!.*(azd|ront|beosztás|havi|Gyógyászat)).*\.xlsx$'
+
+    # Normalize pattern once
+    $normalizedPattern = $pattern.Normalize([Text.NormalizationForm]::FormC)
+
+    # Find matching file
+    $items = Get-ChildItem ([Environment]::GetFolderPath("Desktop")) |
+        Where-Object {
+            $_.Name.Normalize([Text.NormalizationForm]::FormC) -match $normalizedPattern
+        } |
+        Sort-Object Name -Descending |
+        Select-Object -First 1
+
+    if (-not $items) {
         throw "Did not find staff schedule"
     }
 
-    $filePath=$items.FullName
+    $filePath = $items.FullName
+
+    Write-Log "Using roster file: $filePath" -Level "DEBUG"
+
+    # Open Excel
     $ExcelBack = New-Object -ComObject Excel.Application
-    $ExcelBack.visible=$false
+    $ExcelBack.Visible = $false
     $Workbook = $ExcelBack.Workbooks.Open($filePath)
-    $workSheet = $Workbook.Sheets.Item(1)
-    
+    $Worksheet = $Workbook.Sheets.Item(1)
+
     try {
-        $name = Get-Name $worksheet $($now.TimeOfDay  -lt (New-TimeSpan -Hours 12 -Minutes 55) ?  '1~*' :  '*2~**') $today
-    } catch {
+        $name = Get-Name `
+            $Worksheet `
+            ($now.TimeOfDay -lt (New-TimeSpan -Hours 12 -Minutes 55) ? '1~*' : '*2~**') `
+            $today
+    }
+    catch {
         Write-Log $_.Exception.Message -Level "DEBUG"
         throw
-    } finally {
-        $Workbook.close($false)
-        [void][System.Runtime.InteropServices.Marshal]::ReleaseComObject([System.__ComObject]$ExcelBack)
+    }
+    finally {
+        $Workbook.Close($false)
+        [void][System.Runtime.InteropServices.Marshal]::ReleaseComObject($ExcelBack)
         [gc]::Collect()
         [gc]::WaitForPendingFinalizers()
         Remove-Variable ExcelBack -ErrorAction SilentlyContinue
     }
+
     return $name
 }
