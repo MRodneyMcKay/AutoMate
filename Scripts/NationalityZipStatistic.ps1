@@ -67,7 +67,7 @@ function New-ExcelReport {
         [string]$SheetName,
         [array]$Headers,       # Column headers
         [array]$Data,          # Data array (PSCustomObjects)
-        [hashtable]$Summary    # Summary data
+        [System.Collections.IDictionary]$Summary    # Summary data (preserves ordered hashtable)
     )
 
     $excel = New-Object -ComObject Excel.Application
@@ -86,27 +86,63 @@ function New-ExcelReport {
     foreach ($item in $Data) {
         for ($col = 0; $col -lt $Headers.Count; $col++) {
             $propertyName = $Headers[$col] # Use the header name to access the property dynamically
-            $sheet.Cells.Item($row, $col + 1).Value2 = [string]$item.$propertyName
+
+            # Safe property retrieval
+            $value = ""
+            if ($null -ne $item -and $item.PSObject -and $item.PSObject.Properties.Match($propertyName)) {
+                $value = $item.PSObject.Properties[$propertyName].Value
+            }
+
             if ($propertyName -eq "Darabszám") {
-                $sheet.Cells.Item($row, $col + 1).NumberFormat = '# ##0" fő"' # Format numeric columns
+                try {
+                    if ($value -eq $null -or $value -eq "") {
+                        $numeric = 0.0
+                    } else {
+                        $numeric = [double]$value
+                    }
+                } catch {
+                    $numeric = 0.0
+                }
+                $sheet.Cells.Item($row, $col + 1).Value2 = [string]$numeric
+                $sheet.Cells.Item($row, $col + 1).NumberFormat = '# ##0" fő"'
+            } else {
+                $sheet.Cells.Item($row, $col + 1).Value2 = [string]$value
             }
         }
         $row++
     }
-    # Write summary rows in order
-    $summaryRow = 2
-    $startSummaryRow = $summaryRow # Track the start of the summary region
-    foreach ($key in $Summary.Keys) {
-        $sheet.Range("E$summaryRow").Value2 = $key
-        $sheet.Range("F$summaryRow").Value2 = [string]$Summary[$key]
-        $sheet.Range("F$summaryRow").NumberFormat = '# ##0" fő"' # Format the summary values as numbers
 
-        # Apply alternating row colors
+    # Write summary rows in order (preserve ordered hashtable)
+    $summaryRow = 2
+    $startSummaryRow = 2 # Track the start of the summary region
+    foreach ($entry in $Summary.GetEnumerator()) {
+        $key = $entry.Key
+        $val = $entry.Value
+
+        $sheet.Range("E$summaryRow").Value2 = $key
+
+        if ($val -is [int] -or $val -is [long] -or $val -is [double] -or $val -is [decimal]) {
+            $sheet.Range("F$summaryRow").Value2 = [double]$val
+        } else {
+            if ($null -eq $val -or $val -eq "") {
+                $sheet.Range("F$summaryRow").Value2 = ""
+            } else {
+                try {
+                    $num = [double]::Parse([string]$val)
+                    $sheet.Range("F$summaryRow").Value2 = $num
+                } catch {
+                    $sheet.Range("F$summaryRow").Value2 = [string]$val
+                }
+            }
+        }
+
+        $sheet.Range("F$summaryRow").NumberFormat = '# ##0" fő"'
+
+        # Apply alternating row colors (correct range syntax)
         if (($summaryRow % 2) -eq 0) {
-            $sheet.Range("E$summaryRow : F$summaryRow").Interior.Color = 0xE6E6E6           # Light gray
+            $sheet.Range("E$summaryRow : F$summaryRow").Interior.Color = 0xE6E6E6
         } else {
             $sheet.Range("E$summaryRow : F$summaryRow").Interior.Color = 0xFFFFFF
-            # White
         }
 
         # Apply a stronger color and double upper border for "Összesen"
@@ -117,7 +153,8 @@ function New-ExcelReport {
 
         $summaryRow++
     }
-    $summaryRange = $sheet.Range("E$startSummaryRow : F$($summaryRow - 1)")
+
+    $summaryRange = $sheet.Range("E2 : F$($summaryRow - 1)")
     $summaryRange.Borders.Item([Microsoft.Office.Interop.Excel.XlBordersIndex]::xlEdgeLeft).LineStyle = [Microsoft.Office.Interop.Excel.XlLineStyle]::xlContinuous
     $summaryRange.Borders.Item([Microsoft.Office.Interop.Excel.XlBordersIndex]::xlEdgeLeft).Weight = [Microsoft.Office.Interop.Excel.XlBorderWeight]::xlMedium
 
@@ -129,14 +166,24 @@ function New-ExcelReport {
 
     $summaryRange.Borders.Item([Microsoft.Office.Interop.Excel.XlBordersIndex]::xlEdgeBottom).LineStyle = [Microsoft.Office.Interop.Excel.XlLineStyle]::xlContinuous
     $summaryRange.Borders.Item([Microsoft.Office.Interop.Excel.XlBordersIndex]::xlEdgeBottom).Weight = [Microsoft.Office.Interop.Excel.XlBorderWeight]::xlMedium
+
     # Auto-fit columns
     $sheet.Columns.AutoFit()
 
     # Save and release resources
     $workbook.SaveAs($FilePath)
+    $workbook.Close($false)
     $excel.Quit()
-    [System.Runtime.Interopservices.Marshal]::ReleaseComObject($excel)
+    [System.Runtime.Interopservices.Marshal]::ReleaseComObject($sheet) | Out-Null
+    [System.Runtime.Interopservices.Marshal]::ReleaseComObject($workbook) | Out-Null
+    [System.Runtime.Interopservices.Marshal]::ReleaseComObject($excel) | Out-Null
+    [GC]::Collect()
+    [GC]::WaitForPendingFinalizers()
 }
+
+
+
+
 
 # Main Script
 $folderBrowser = New-Object System.Windows.Forms.FolderBrowserDialog
@@ -180,7 +227,7 @@ if ($folderBrowser.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
             "Kecskemét"                             = $zipStats.Kecskemet
             "Kecskemét környéke"                    = $zipStats.Kecskemet_kornyeke
             "Egyéb magyarországon belüli település" = $zipStats.Egyeb_telepules
-            "Összesen"                              = $zipStats.Osszesen
+            "Összesen:"                             = $zipStats.Osszesen
         }
 
         New-ExcelReport     -FilePath "$selectedPath\$($pair.Month) - Irányítószámok.xlsx" `
