@@ -28,6 +28,9 @@ function Get-Receptionists {
     if ($items.Count -eq 0) {
         throw "Did not find front office schedule"
     }
+    else {
+        Write-Log "Found front office schedule file: $($items.Name)" -Level "DEBUG"
+    }
     $filePath = $items.FullName
     $excel = New-Object -ComObject Excel.Application
     $excel.Visible = $false
