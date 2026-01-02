@@ -118,9 +118,30 @@ function Cleanup-WordObjects_Allowance {
     [System.Runtime.Interopservices.Marshal]::ReleaseComObject($Word) | Out-Null
 }
 
+function Get-NextMonthAndYear {
+    param( [datetime]$Date = (Get-Date) )
+
+    if ($Date.Month -eq 12) {
+        return @{
+            Month = 1
+            Year  = $Date.Year + 1
+        }
+    } else {
+        return @{
+            Month = $Date.Month + 1
+            Year  = $Date.Year
+        }
+    }
+}
+
 function Print-CommutingAllowance {
 # Main script logic
-$bejaroPath = "C:\Users\Hirossport\Hiros Sport Nonprofit Kft\Hiros-sport - Dokumentumok\Furdo\Recepcio\Nyomtatni\Útiköltség nyomtatvány_2025.docx"
+
+$next = Get-NextMonthAndYear
+$month = $next.Month
+$year  = $next.Year
+
+$bejaroPath = "C:\Users\Hirossport\Hiros Sport Nonprofit Kft\Hiros-sport - Dokumentumok\Furdo\Recepcio\Nyomtatni\Útiköltség nyomtatvány_$year.docx"
 $bejarodataSourcePath = "C:\Users\Hirossport\Hiros Sport Nonprofit Kft\Hiros-sport - Dokumentumok\Furdo\Recepcio\Nyomtatni\Útiköltség nyomtatvány.xlsx"
 $connectionString = "Provider=Microsoft.ACE.OLEDB.12.0;Data Source=$bejarodataSourcePath;Mode=Read;Extended Properties=`"HDR=YES;IMEX=1;`";"
 $sqlStatement = "SELECT * FROM [Munka1$]"
@@ -134,7 +155,7 @@ $wordApp = $mailMergeResult.Word
 $originalDocument = $mailMergeResult.OriginalDocument
 
 # Generate page range and print
-$month = (Get-Date).Month + 1
+
 $sections = $mergedDocument.Sections.Count
 $pageRange = Generate-PageRange -Month $month -Sections $sections
 
