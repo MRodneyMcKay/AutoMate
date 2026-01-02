@@ -41,6 +41,22 @@ function Open-WordDocument {
     }
 }
 
+function Get-NextMonthAndYearOffset {
+    param( [datetime]$Date = (Get-Date) )
+
+    if ($Date.Month -eq 12) {
+        return @{
+            Month = 0
+            Year  = $Date.Year + 1
+        }
+    } else {
+        return @{
+            Month = $Date.Month
+            Year  = $Date.Year
+        }
+    }
+}
+
 # Function to print a specific page range
 function Print-DocumentSchedule {
     param (
@@ -51,7 +67,7 @@ function Print-DocumentSchedule {
     $Background = 0
     $Range = [Microsoft.Office.Interop.Word.WdPrintOutRange]::wdPrintRangeOfPages
     $Item = 0
-    Set-PrinterDuplexMode -DuplexingMode "TwoSidedLongEdge"
+    #Set-PrinterDuplexMode -DuplexingMode "TwoSidedLongEdge"
     $Document.PrintOut(
         [ref]$Background,
         [Type]::Missing,
@@ -82,12 +98,12 @@ function Cleanup-WordObjects_requests {
 # Function to calculate the page range
 function Get-PageRange {
     param (
-        [int]$MonthOffset,
         [int]$StartMultiplier,
         [int]$EndMultiplier
     )
-    $Start = (($MonthOffset + (Get-Date).Month) * 6) + $StartMultiplier
-    $End = (($MonthOffset + (Get-Date).Month) * 6) + $EndMultiplier
+    $next = (Get-NextMonthAndYearOffset)
+    $Start =  $StartMultiplier + ($next.Month * 6)
+    $End = $EndMultiplier + ($next.Month * 6)
     return "$Start-$End"
 }
 
@@ -103,32 +119,29 @@ function Print-Igeny {
     $Word = $WordObjects.Word
     $Document = $WordObjects.Document
 
-    $PageRange = Get-PageRange -MonthOffset 1 -StartMultiplier $StartMultiplier -EndMultiplier $EndMultiplier
+    $PageRange = Get-PageRange -StartMultiplier $StartMultiplier -EndMultiplier $EndMultiplier
     Print-DocumentSchedule -Document $Document -PageRange $PageRange
 
     Cleanup-WordObjects_requests -Word $Word -Document $Document
 }
 
-# Define the file path
-
-
 function Print-RequestUszomester {
     param (
-        [string]$FilePath = "C:\Users\Hirossport\Hiros Sport Nonprofit Kft\Hiros-sport - Dokumentumok\Furdo\Recepcio\Nyomtatni\Jelenlétik, igények\Igények.docx"
+        [string]$FilePath = "C:\Users\Hirossport\Hiros Sport Nonprofit Kft\Hiros-sport - Dokumentumok\Furdo\Recepcio\Nyomtatni\Jelenlétik, igények\Igények_$((Get-NextMonthAndYearOffset).Year).docx"
     )
     Print-Igeny -FilePath $FilePath -StartMultiplier 1 -EndMultiplier 2
 }
 
 function Print-RequestFrontOffice {
     param (
-        [string]$FilePath = "C:\Users\Hirossport\Hiros Sport Nonprofit Kft\Hiros-sport - Dokumentumok\Furdo\Recepcio\Nyomtatni\Jelenlétik, igények\Igények.docx"
+        [string]$FilePath = "C:\Users\Hirossport\Hiros Sport Nonprofit Kft\Hiros-sport - Dokumentumok\Furdo\Recepcio\Nyomtatni\Jelenlétik, igények\Igények_$((Get-NextMonthAndYearOffset).Year).docx"
     )
     Print-Igeny -FilePath $FilePath -StartMultiplier 3 -EndMultiplier 4
 }
 
 function Print-RequestGyogyaszat {
     param (
-        [string]$FilePath = "C:\Users\Hirossport\Hiros Sport Nonprofit Kft\Hiros-sport - Dokumentumok\Furdo\Recepcio\Nyomtatni\Jelenlétik, igények\Igények.docx"
+        [string]$FilePath = "C:\Users\Hirossport\Hiros Sport Nonprofit Kft\Hiros-sport - Dokumentumok\Furdo\Recepcio\Nyomtatni\Jelenlétik, igények\Igények_$((Get-NextMonthAndYearOffset).Year).docx"
     )
     Print-Igeny -FilePath $FilePath -StartMultiplier 5 -EndMultiplier 6
 }
