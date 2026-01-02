@@ -151,33 +151,12 @@ function Cleanup-WordObjects {
 
 }
 
-function Get-NextMonthAndYear {
-    param( [datetime]$Date = (Get-Date) )
-
-    if ($Date.Month -eq 12) {
-        return @{
-            Month = 1
-            Year  = $Date.Year + 1
-        }
-    } else {
-        return @{
-            Month = $Date.Month + 1
-            Year  = $Date.Year
-        }
-    }
-}
-
-
 # Main script logic
 [System.Reflection.Assembly]::LoadFrom(
     [System.Environment]::GetEnvironmentVariable("OfficeAssemblies_Word", [System.EnvironmentVariableTarget]::User)
 )
 
-$next = Get-NextMonthAndYear
-$month = $next.Month
-$year  = $next.Year
-
-$documentPath = "C:\Users\Hirossport\Hiros Sport Nonprofit Kft\Hiros-sport - Dokumentumok\Furdo\Recepcio\Nyomtatni\TIG jelenléti ív_$year.docx"
+$documentPath = "C:\Users\Hirossport\Hiros Sport Nonprofit Kft\Hiros-sport - Dokumentumok\Furdo\Recepcio\Nyomtatni\TIG jelenléti ív_2025.docx"
 $dataSourcePath = "C:\Users\Hirossport\Hiros Sport Nonprofit Kft\Hiros-sport - Dokumentumok\Furdo\Recepcio\Nyomtatni\TIG csoportok.csv"
 
 $mailMergeResult = Perform-MailMerge -DocumentPath $documentPath -DataSourcePath $dataSourcePath
@@ -186,6 +165,7 @@ $mergedDocument   = $mailMergeResult.Document
 $Word             = $mailMergeResult.Word
 $OriginalDocument = $mailMergeResult.OriginalDocument
 
+$month = (Get-Date).Month + 1
 $sections = $mergedDocument.Sections.Count
 $pageRange = Generate-PageRange -Month $month -Sections $sections
 
