@@ -29,7 +29,7 @@ function Find-File {
         Write-Log -Message "Fájl megtalálva: $($items.FullName)"
         return $items.FullName
     } elseif ($PromptIfNotFound) {
-        Write-Log -Message "Nem találom a következőt: $PromptTitle" -Level "ERROR"
+        Write-Log -Message "Nem találom a következőt: $PromptTitle" -Level "ERROR" -ShowMessageBox
 
         $OpenFileDialog = New-Object System.Windows.Forms.OpenFileDialog
         $OpenFileDialog.initialDirectory = $Directory
@@ -131,7 +131,7 @@ function get-IgenyekHelper {
     }
     if ($igeny.Worksheet.Cells($limit, 2 + $yesterday.Day).Value2 -ne $total) {        
         $igeny.Application.visible=$true
-        Write-Log -Message "$total Valami nem jó, nem egyezik az elszámolásba beírt órák száma az igénnyel. `nKérlek nézd át!" -Level "ERROR"           
+        Write-Log -Message "$total Valami nem jó, nem egyezik az elszámolásba beírt órák száma az igénnyel. `nKérlek nézd át!" -Level "ERROR" -ShowMessageBox          
         exit
     }
     else {

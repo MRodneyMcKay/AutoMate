@@ -18,22 +18,10 @@ param (
     along with this program. If not, see <https://www.gnu.org/licenses/>.  
 #>
 
-[System.Reflection.Assembly]::LoadFrom("C:\Windows\Microsoft.NET\Framework64\v4.0.30319\System.Windows.Forms.dll")
-Add-Type -AssemblyName PresentationFramework
 
-function Show-LaneMessage {
-    param (
-        [string]$Title,
-        [string]$Message
-    )
-    [System.Windows.Forms.MessageBox]::Show(
-        $(New-Object -TypeName System.Windows.Forms.Form -Property @{ TopMost = $true }),
-        $Message,
-        $Title,
-        [System.Windows.Forms.MessageBoxButtons]::OK,
-        [System.Windows.MessageBoxImage]::Information
-    ) | Out-Null
-}
+$ModulePath = Join-Path -Path $PSScriptRoot -ChildPath "..\Modules\"
+$resolvedModulegPath = (Resolve-Path -Path $ModulePath).Path
+Import-Module (Join-Path -Path $resolvedModulegPath -ChildPath 'LoggingSystem\LoggingSystem.psd1')
 
 $messages = @{
     "M02_Free" = @{
@@ -80,5 +68,5 @@ $messages = @{
 
 if ($messages.ContainsKey($MessageID)) {
     $msg = $messages[$MessageID]
-    Show-LaneMessage -Title $msg.Title -Message $msg.Text
+    Write-Log -Message "Show message box for pool schedule:" -Level "INFO" -ShowMessageBox -MsgBoxTitle $msg.Title -MsgBoxMessage $msg.Text
 }

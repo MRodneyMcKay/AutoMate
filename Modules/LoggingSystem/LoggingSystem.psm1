@@ -15,12 +15,12 @@
     along with this program. If not, see <https://www.gnu.org/licenses/>.  
 #>
 
-[System.Reflection.Assembly]::LoadFrom("C:\Windows\Microsoft.NET\Framework64\v4.0.30319\System.Windows.Forms.dll")
 Add-Type -AssemblyName PresentationFramework
+Add-Type -AssemblyName PresentationCore
 
 #import provate functions
 . $PSScriptRoot\Private\asciiart.ps1
-. $PSScriptRoot\Private\ShowError.ps1
+. $PSScriptRoot\Private\ShowMessage.ps1
 
 #import public functions
 . $PSScriptRoot\Public\writelog.ps1
