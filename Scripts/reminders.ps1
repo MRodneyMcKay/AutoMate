@@ -1,5 +1,5 @@
 param (
-    [string]$MessageID
+    [string]$ReminderID
 )
 <#  
     This file is part of AutoMate.  
@@ -21,22 +21,6 @@ param (
 $ModulePath = Join-Path -Path $PSScriptRoot -ChildPath "..\Modules\"
 $resolvedModulegPath = (Resolve-Path -Path $ModulePath).Path
 Import-Module (Join-Path -Path $resolvedModulegPath -ChildPath 'LoggingSystem\LoggingSystem.psd1')
-[System.Reflection.Assembly]::LoadFrom("C:\Windows\Microsoft.NET\Framework64\v4.0.30319\System.Windows.Forms.dll")
-Add-Type -AssemblyName PresentationFramework
-
-function Show-Message {
-    param (
-        [string]$Title,
-        [string]$Message
-    )
-    [System.Windows.Forms.MessageBox]::Show(
-        $(New-Object -TypeName System.Windows.Forms.Form -Property @{ TopMost = $true }),
-        $Message,
-        $Title,
-        [System.Windows.Forms.MessageBoxButtons]::OK,
-        [System.Windows.MessageBoxImage]::Information
-    ) | Out-Null
-}
 
 $messages = @{
     "TIG" = @{
@@ -53,7 +37,8 @@ $messages = @{
     }
 }
 
-if ($messages.ContainsKey($MessageID)) {
-    $msg = $messages[$MessageID]
-    Show-Message -Title $msg.Title -Message $msg.Text
+if ($messages.ContainsKey($ReminderID)) {
+    $msg = $messages[$ReminderID]
+    #Show-Message -Title $msg.Title -Message $msg.Text
+    Write-Log -Message "Show message box for reminder:" -Level "INFO" -ShowMessageBox -MsgBoxTitle $msg.Title -MsgBoxMessage $msg.Text
 }

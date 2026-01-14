@@ -83,7 +83,7 @@ function Open-Emails {
             Open-EmailTemplate -Outlook $outlook -TemplatePath $karorakTemplate -Replacements @{} -subject "Karórák"
         }
     } catch {
-        Write-Log -Message "Error opening email templates: $_" -Level "ERROR"
+        Write-Log -Message "Error opening email templates: $_" -Level "ERROR" -ShowMessageBox
     } finally {
         if ($outlook) {
             [System.Runtime.InteropServices.Marshal]::ReleaseComObject($outlook)

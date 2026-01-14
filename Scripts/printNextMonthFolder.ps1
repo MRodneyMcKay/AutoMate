@@ -165,7 +165,7 @@ $RunButton.Add_Click({
                 & $Tasks[$taskName]
                 Write-Log "Done: ${taskName}"
             } catch {
-                Write-Log "Error in ${taskName}: $($_.Exception.Message)" -Level Error
+                Write-Log "Error in ${taskName}: $($_.Exception.Message)" -Level Error -ShowMessageBox
             }
         }
     }

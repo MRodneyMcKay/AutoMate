@@ -38,6 +38,7 @@ function Get-TodaysScheduleFile {
 
         # Normalize: replace spaces with dots, remove duplicate dots
         $normalized = ($namePart -replace "\s+", ".") -replace "\.\.", "."
+        $normalized = $normalized.TrimEnd('.')
 
         # Fix missing dash if needed
         if ($normalized -match "^\d{4}\.\d{2}\.\d{2}\.\d{2}$") {
