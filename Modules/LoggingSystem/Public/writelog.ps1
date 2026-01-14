@@ -19,7 +19,10 @@ function Write-Log {
     param (
         [string]$Message,
         [ValidateSet("INFO", "WARNING", "ERROR", "DEBUG")]
-        [string]$Level = "INFO"
+        [string]$Level = "INFO", 
+        [switch]$ShowMessageBox, 
+        [string]$MsgBoxTitle = "HIBA", 
+        [string]$MsgBoxMessage
     )
 
     # Create a timestamp
@@ -61,7 +64,20 @@ function Write-Log {
     switch ($Level) {
         "INFO"    { Write-Host $logEntry -ForegroundColor Cyan }
         "WARNING" { Write-Host $logEntry -ForegroundColor Yellow }
-        "ERROR"   { Write-Host $logEntry -ForegroundColor Red; Show-ErrorMessage -Message $Message -Title "$scriptName : $functionName" }
+        "ERROR"   { Write-Host $logEntry -ForegroundColor Red }
         "DEBUG"   { Write-Host $logEntry -ForegroundColor Gray }
     }   
+    # Map log level → WPF icon 
+    $icon = switch ($Level) { 
+        "INFO" { [System.Windows.MessageBoxImage]::Information } 
+        "WARNING" { [System.Windows.MessageBoxImage]::Warning } 
+        "ERROR" { [System.Windows.MessageBoxImage]::Error }
+        "DEBUG" { [System.Windows.MessageBoxImage]::None }
+    }
+    # Show message box if requested 
+    if ($ShowMessageBox) { 
+        $finalTitle = $MsgBoxTitle ? $MsgBoxTitle : "$scriptName : $functionName" 
+        $finalMessage = $MsgBoxMessage ? $MsgBoxMessage : $Message 
+        Show-Message -Message $finalMessage -Title $finalTitle -Icon $icon 
+    }
 }

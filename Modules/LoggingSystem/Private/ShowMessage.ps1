@@ -15,16 +15,29 @@
     along with this program. If not, see <https://www.gnu.org/licenses/>.  
 #>
 
-function Show-ErrorMessage {
-    param (
+function Show-Message {
+    param(
         [string]$Message,
-        [string]$Title = "Hiba"
+        [string]$Title = "Hiba",
+        [System.Windows.MessageBoxImage]$Icon = [System.Windows.MessageBoxImage]::Error
     )
-    [System.Windows.Forms.MessageBox]::Show(
-        $(New-Object -TypeName System.Windows.Forms.Form -Property @{ TopMost = $true }),
+
+    $owner = New-Object System.Windows.Window
+    $owner.Topmost = $true
+    $owner.WindowStyle = 'None'
+    $owner.ShowInTaskbar = $true
+    $owner.Width = 0
+    $owner.Height = 0
+    $owner.Show()
+    $owner.Hide()
+
+    [System.Windows.MessageBox]::Show(
+        $owner,
         $Message,
         $Title,
-        [System.Windows.Forms.MessageBoxButtons]::OK,
-        [System.Windows.MessageBoxImage]::Error
-    ) | Out-Null
+        [System.Windows.MessageBoxButton]::OK,
+        $Icon
+    )
+
+    $owner.Close()
 }

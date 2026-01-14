@@ -16,17 +16,33 @@
 #>
 
 $ModulePath = Join-Path -Path $PSScriptRoot -ChildPath "..\Modules\"
-$resolvedModulegPath = (Resolve-Path -Path $ModulePath).Path
+$resolvedModulePath = (Resolve-Path -Path $ModulePath).Path
 
-Import-Module (Join-Path -Path $resolvedModulegPath -ChildPath 'LoggingSystem\LoggingSystem.psd1')
-Import-Module (Join-Path -Path $resolvedModulegPath -ChildPath 'RosterInformation\RosterInformation.psd1')
+Import-Module (Join-Path -Path $resolvedModulePath -ChildPath 'LoggingSystem\LoggingSystem.psd1')
+Import-Module (Join-Path -Path $resolvedModulePath -ChildPath 'RosterInformation\RosterInformation.psd1')
 
-[System.Reflection.Assembly]::LoadFrom("C:\Windows\Microsoft.NET\Framework64\v4.0.30319\System.Windows.Forms.dll")
-Add-Type -AssemblyName PresentationFramework
 try {
-    $shiftManager =  Get-ShiftManager
-} catch {
-    [System.Windows.Forms.MessageBox]::Show($(New-Object -TypeName System.Windows.Forms.Form -Property @{TopMost=$true}), "Nem tudom ki most a műszakvezető", "Vajon ki a müszi?", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.MessageBoxImage]::Error)
+    $shiftManager = Get-ShiftManager
+}
+catch {
+    Write-Log `
+        -Message "Nem tudom ki most a műszakvezető" `
+        -Level ERROR `
+        -ShowMessageBox `
+        -MsgBoxTitle "Vajon ki a müszi?" `
+        -MsgBoxMessage "Nem tudom ki most a műszakvezető."
     exit
 }
-[System.Windows.Forms.MessageBox]::Show($(New-Object -TypeName System.Windows.Forms.Form -Property @{TopMost=$true}), "A $((Get-Date).TimeOfDay  -lt (New-TimeSpan -Hours 12 -Minutes 55) ? "délelöttös" : "délutános") műszakvezető: $shiftManager", "Vajon ki a müszi?", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.MessageBoxImage]::Information)
+
+# Meghatározzuk, hogy délelőttös vagy délutános
+$shiftType = ((Get-Date).TimeOfDay -lt (New-TimeSpan -Hours 12 -Minutes 55)) ?
+    "délelőttös" :
+    "délutános"
+
+Write-Log `
+    -Message "A $shiftType műszakvezető: $shiftManager" `
+    -Level INFO `
+    -ShowMessageBox `
+    -MsgBoxTitle "Vajon ki a müszi?" `
+    -MsgBoxMessage "A $shiftType műszakvezető: $shiftManager"
+
