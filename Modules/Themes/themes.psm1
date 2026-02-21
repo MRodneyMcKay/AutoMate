@@ -34,6 +34,10 @@ function Set-Niki {
     Set-Personalization -AppsUseLightTheme 1 -SystemUsesLightTheme 1 -ColorPrevalence 1 -PicturePath "C:\Windows\Web\Wallpaper\Windows\img3.jpg" -Nickname "Niki"
 }
 
-Export-ModuleMember -Function Set-Default, Set-Zsolti, Set-Niki
+function Set-Ivett {
+    Set-Personalization -AppsUseLightTheme 1 -SystemUsesLightTheme 1 -ColorPrevalence 1 -PicturePath "C:\Windows\Web\Wallpaper\Windows\img4.jpg" -Nickname "Ivett"
+}
+
+Export-ModuleMember -Function Set-Default, Set-Zsolti, Set-Niki, Set-Ivett
 
 Write-Log -Message "Module loaded: themes"
