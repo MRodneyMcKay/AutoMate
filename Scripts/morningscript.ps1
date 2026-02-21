@@ -41,9 +41,9 @@ if ($(Get-ItemPropertyValue -Path $registryPath -Name YesterdaysWorkingHours) -n
     Write-Log -Message "Diákelszámolás elkészítése"
     $roster = Get-Receptionists
     $approved = @(1, 112, "1/9")
-    open-StudentWorkReportFurdo -fillCompletely ((($roster | Where-Object { $_.Name -eq 'Raduska Zsolt' }).Shift -in $approved -or ($roster | Where-Object { $_.Name -eq 'Konfár Nikolett' }).Shift -in $approved))
+    open-StudentWorkReportFurdo -fillCompletely ((($roster | Where-Object { $_.Name -eq 'Raduska Zsolt' }).Shift -in $approved -or ($roster | Where-Object { $_.Name -eq 'Konfár Nikolett' }).Shift -in $approved -or ($roster | Where-Object { $_.Name -eq 'Pivarcsi Ivett' }).Shift -in $approved))
     if ((Get-Date).Month -in 6,7,8,9) {
-        open-StudentWorkReportStrand -fillCompletely ((($roster | Where-Object { $_.Name -eq 'Raduska Zsolt' }).Shift -in $approved -or ($roster | Where-Object { $_.Name -eq 'Konfár Nikolett' }).Shift -in $approved))
+        open-StudentWorkReportStrand -fillCompletely ((($roster | Where-Object { $_.Name -eq 'Raduska Zsolt' }).Shift -in $approved -or ($roster | Where-Object { $_.Name -eq 'Konfár Nikolett' }).Shift -in $approved -or ($roster | Where-Object { $_.Name -eq 'Pivarcsi Ivett' }).Shift -in $approved))
     }
     Set-ItemProperty -Path $registryPath -Name YesterdaysWorkingHours -value (Get-Date).Day
 } else {
