@@ -1,3 +1,7 @@
+param (
+    [datetime]$Date = (Get-Date -Day 1).AddMonths(1)
+)
+
 <#
     This file is part of AutoMate.
 
@@ -156,7 +160,7 @@ function Cleanup-WordObjects {
     [System.Environment]::GetEnvironmentVariable("OfficeAssemblies_Word", [System.EnvironmentVariableTarget]::User)
 )
 
-$documentPath = "C:\Users\Hirossport\Hiros Sport Nonprofit Kft\Hiros-sport - Dokumentumok\Furdo\Recepcio\Nyomtatni\TIG jelenléti ív_2025.docx"
+$documentPath = "C:\Users\Hirossport\Hiros Sport Nonprofit Kft\Hiros-sport - Dokumentumok\Furdo\Recepcio\Nyomtatni\TIG jelenléti ív_$($Date.Year).docx"
 $dataSourcePath = "C:\Users\Hirossport\Hiros Sport Nonprofit Kft\Hiros-sport - Dokumentumok\Furdo\Recepcio\Nyomtatni\TIG csoportok.csv"
 
 $mailMergeResult = Perform-MailMerge -DocumentPath $documentPath -DataSourcePath $dataSourcePath
@@ -165,9 +169,8 @@ $mergedDocument   = $mailMergeResult.Document
 $Word             = $mailMergeResult.Word
 $OriginalDocument = $mailMergeResult.OriginalDocument
 
-$month = (Get-Date).Month + 1
 $sections = $mergedDocument.Sections.Count
-$pageRange = Generate-PageRange -Month $month -Sections $sections
+$pageRange = Generate-PageRange -Month $Date.Month -Sections $sections
 
 Print-Document -Document $mergedDocument -PageRange $pageRange
 

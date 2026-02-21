@@ -51,7 +51,7 @@ function Get-NextMonthAndYearOffset {
         }
     } else {
         return @{
-            Month = $Date.Month
+            Month = $Date.Month + 1
             Year  = $Date.Year
         }
     }

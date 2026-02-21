@@ -43,6 +43,7 @@ function Get-Receptionists {
 
     try {        
         $roster += Get-Shift $worksheet 'Konfár Nikolett' $today
+        $roster += Get-Shift $worksheet 'Pivarcsi Ivett' $today
         $roster += Get-Shift $worksheet 'Raduska Zsolt' $today
     } catch {
         Write-Log $_.Exception.Message -Level "DEBUG"
