@@ -30,6 +30,8 @@ $roster = Get-Receptionists
 }
 $zsoltiToday = ($roster | Where-Object { $_.Name -eq 'Raduska Zsolt' }).Shift
 $nikiToday = ($roster | Where-Object { $_.Name -eq 'Konfár Nikolett' }).Shift
+$ivettToday = ($roster | Where-Object { $_.Name -eq 'Pivarcsi Ivett' }).Shift
+Write-Log -Message "Today's shifts: Zsolti: $zsoltiToday, Niki: $nikiToday, Ivett: $ivettToday" -Level "DEBUG"
 # Get date and working states
 
 
@@ -58,21 +60,30 @@ function ProcessShift {
 
 # Define task and action mappings for shifts
 $shiftConfigsZsolti = @(
-    @{ Shift = 1; TriggerTime = ($nikiToday -eq 2 ? [datetime]"13:00" : [datetime]"13:30"); Action = { Set-Zsolti}; applyThemeToggle = ($nikiToday -eq 2 ? "Niki" : "Default")},
-    @{ Shift = 2; TriggerTime = [datetime]"13:00"; Action = ($nikiToday -eq 1 ? {Set-Niki} : {Set-Default}); applyThemeToggle = "Zsolti"},
-    @{ Shift = 112; TriggerTime = [datetime]"17:30"; Action = { Set-Zsolti }; applyThemeToggle = "Default" },
+    @{ Shift = 1; TriggerTime = (($nikiToday -eq 2 -or $ivettToday -eq 2) ? [datetime]"13:00" : [datetime]"13:30"); Action = { Set-Zsolti}; applyThemeToggle = ($nikiToday -eq 2 ? "Niki" : ($ivettToday -eq 2 ? "Ivett" : "Default"))},
+    @{ Shift = 2; TriggerTime = [datetime]"13:00"; Action = ($nikiToday -eq 1 ? {Set-Niki} : ($ivettToday -eq 1 ? {Set-Ivett} : {Set-Default})); applyThemeToggle = "Zsolti"},
+    @{ Shift = 112; TriggerTime = [datetime]"17:30"; Action = { Set-Zsolti }; applyThemeToggle = ($nikiToday -eq "2/4" ? "Niki" : ($ivettToday -eq "2/4" ? "Ivett" : "Default")) },
     @{ Shift = 212; TriggerTime = [datetime]"08:30"; Action = { Set-Default }; applyThemeToggle = "Zsolti" },
     @{ Shift = "1/9"; TriggerTime = [datetime]"14:30"; Action = { Set-Zsolti }; applyThemeToggle = "Default" },
     @{ Shift = "2/9"; TriggerTime = [datetime]"12:00"; Action = { Set-Default }; applyThemeToggle = "Zsolti" }
 )
 
 $shiftConfigsNiki = @(
-    @{ Shift = 1; TriggerTime = ($zsoltiToday -eq 2 ? [datetime]"13:00" : [datetime]"13:30"); Action = { Set-Niki}; applyThemeToggle = ($zsoltiToday -eq 2 ? "Zsolti" : "Default")},
-    @{ Shift = 2; TriggerTime = [datetime]"13:00"; Action = ($zsoltiToday -eq 1 ? {Set-Zsolti} : {Set-Default}); applyThemeToggle = "Niki"},
-    @{ Shift = 112; TriggerTime = [datetime]"17:30"; Action = { set-Niki }; applyThemeToggle = "Default" },
+    @{ Shift = 1; TriggerTime = (($zsoltiToday -eq 2 -or $ivettToday -eq 2) ? [datetime]"13:00" : [datetime]"13:30"); Action = { Set-Niki}; applyThemeToggle = ($zsoltiToday -eq 2 ? "Zsolti" : ($ivettToday -eq 2 ? "Ivett" : "Default"))},
+    @{ Shift = 2; TriggerTime = [datetime]"13:00"; Action = ($zsoltiToday -eq 1 ? {Set-Zsolti} : ($ivettToday -eq 1 ? {Set-Ivett} : {Set-Default})); applyThemeToggle = "Niki"},
+    @{ Shift = 112; TriggerTime = [datetime]"17:30"; Action = { set-Niki }; applyThemeToggle = ($zsoltiToday -eq "2/4" ? "Zsolti" : ($ivettToday -eq "2/4" ? "Ivett" : "Default")) },
     @{ Shift = 212; TriggerTime = [datetime]"08:30"; Action = { Set-Default }; applyThemeToggle = "Niki" },
     @{ Shift = "1/9"; TriggerTime = [datetime]"14:30"; Action = { Set-Niki }; applyThemeToggle = "Default" },
     @{ Shift = "2/9"; TriggerTime = [datetime]"12:00"; Action = { Set-Default }; applyThemeToggle = "Niki" }
+)
+
+$shiftConfigsIvett = @(
+    @{ Shift = 1; TriggerTime = (($zsoltiToday -eq 2 -or $nikiToday -eq 2) ? [datetime]"13:00" : [datetime]"13:30"); Action = { Set-Ivett}; applyThemeToggle = ($zsoltiToday -eq 2 ? "Zsolti" : ($nikiToday -eq 2 ? "Niki" : "Default"))},
+    @{ Shift = 2; TriggerTime = [datetime]"13:00"; Action = ($zsoltiToday -eq 1 ? {Set-Zsolti} : ($nikiToday -eq 1 ? {Set-Niki} : {Set-Default})); applyThemeToggle = "Ivett"},
+    @{ Shift = 112; TriggerTime = [datetime]"17:30"; Action = { Set-Ivett }; applyThemeToggle = ($zsoltiToday -eq "2/4" ? "Zsolti" : ($nikiToday -eq "2/4" ? "Niki" : "Default")) },
+    @{ Shift = 212; TriggerTime = [datetime]"08:30"; Action = { Set-Default }; applyThemeToggle = "Ivett" },
+    @{ Shift = "1/9"; TriggerTime = [datetime]"14:30"; Action = { Set-Ivett }; applyThemeToggle = "Default" },
+    @{ Shift = "2/9"; TriggerTime = [datetime]"12:00"; Action = { Set-Default }; applyThemeToggle = "Ivett" }
 )
 
 # Function to configure shifts
@@ -94,8 +105,9 @@ function ConfigureShifts {
 # Process shifts
 $managedZsolti = ConfigureShifts $shiftConfigsZsolti $zsoltiToday
 $managedNiki = ConfigureShifts $shiftConfigsNiki $nikiToday
+$managedIvett = ConfigureShifts $shiftConfigsIvett $ivettToday
 
 # Final fallback action
-if (-not ($managedZsolti -or $managedNiki)) {
+if (-not ($managedZsolti -or $managedNiki -or $managedIvett)) {
     Set-Default
 }
