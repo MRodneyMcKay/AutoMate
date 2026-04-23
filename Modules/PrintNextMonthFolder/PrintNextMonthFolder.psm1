@@ -16,11 +16,9 @@
 #>
 
 Import-Module (Join-Path -Path $PSScriptRoot -ChildPath '..\LoggingSystem\LoggingSystem.psd1')
+Import-Module (Join-Path -Path $PSScriptRoot -ChildPath '..\PrinterConfig\PrinterConfig.psd1')
 [System.Reflection.Assembly]::LoadFrom([System.Environment]::GetEnvironmentVariable("OfficeAssemblies_Excel", [System.EnvironmentVariableTarget]::User)) 
 [System.Reflection.Assembly]::LoadFrom([System.Environment]::GetEnvironmentVariable("OfficeAssemblies_Word", [System.EnvironmentVariableTarget]::User)) 
-
-#import provate functions
-. $PSScriptRoot\Private\configureprinter.ps1
 
 #import public functions
 . $PSScriptRoot\Public\monthlyPrintScheduleRequest.ps1

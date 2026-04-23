@@ -22,24 +22,8 @@ param (
 $ModulePath = Join-Path -Path $PSScriptRoot -ChildPath "..\Modules\"
 $resolvedModulegPath = (Resolve-Path -Path $ModulePath).Path
 Import-Module (Join-Path -Path $resolvedModulegPath -ChildPath 'LoggingSystem\LoggingSystem.psd1')
+Import-Module (Join-Path -Path $resolvedModulegPath -ChildPath 'PrinterConfig\PrinterConfig.psd1')
 
-# Get the default printer
-function Get-DefaultPrinter {
-    return (Get-CimInstance -ClassName Win32_Printer | Where-Object { $_.Default -eq $true })
-}
-
-function Set-PrinterDuplexMode {
-    param (
-        [string]$PrinterName = (Get-CimInstance -ClassName Win32_Printer | Where-Object { $_.Default -eq $true }).Name,
-        [string]$DuplexingMode
-    )
-    try {
-        Set-PrintConfiguration -PrinterName $PrinterName -DuplexingMode $DuplexingMode | Out-Null
-        Write-Log -Message "Configure printer $PrinterName with duplexing mode $DuplexingMode." -Level INFO
-    } catch {
-        Write-Log -Message "Failed to configure printer $PrinterName with duplexing mode $DuplexingMode. Error: $_" -Level Error
-    }
-}
 
 # Perform the mail merge
 function Perform-MailMerge {
@@ -121,7 +105,13 @@ function Print-Document {
     )
 
     # Configure printer for one-sided printing
-    Set-PrinterDuplexMode -DuplexingMode "OneSided"
+    try {
+        Set-DuplexingMode -Mode "Simplex"
+    }
+    catch {
+        Write-Log -Message "ERROR: $($_.Exception.Message)" -Level "ERROR"
+        exit 1
+    }
 
     # Print the document
     $BackGround = 0
@@ -132,7 +122,13 @@ function Print-Document {
     Write-Log -Message "Printing $PageRange pages of $($Document.Name)"
 
     # Restore printer to two-sided printing
-    Set-PrinterDuplexMode -DuplexingMode "TwoSidedLongEdge"
+    try {
+        Set-DuplexingMode -Mode "Duplex"
+    }
+    catch {
+        Write-Log -Message "ERROR: $($_.Exception.Message)" -Level "ERROR"
+        exit 1
+    }
 }
 
 # Clean up and release COM objects

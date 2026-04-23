@@ -83,8 +83,14 @@ function Print-AttandanceSheetUszomester {
         [string]$OpenFile
     )
 
-    Set-PrinterDuplexMode -DuplexingMode "TwoSidedLongEdge"
-    
+    try {
+        Set-DuplexingMode -Mode "Duplex"
+    }
+    catch {
+        Write-Log -Message "ERROR: $($_.Exception.Message)" -Level "ERROR"
+        exit 1
+    }
+
     # Open Excel workbook
     $Excel = New-Object -ComObject Excel.Application
     $Excel.Visible = $false
@@ -107,7 +113,13 @@ function Print-AttandanceSheetFrontOffice {
         [string]$OpenFile
     )
 
-    Set-PrinterDuplexMode -DuplexingMode "TwoSidedLongEdge"
+    try {
+        Set-DuplexingMode -Mode "Duplex"
+    }
+    catch {
+        Write-Log -Message "ERROR: $($_.Exception.Message)" -Level "ERROR"
+        exit 1
+    }
     
     # Open Excel workbook
     $Excel = New-Object -ComObject Excel.Application
@@ -131,7 +143,13 @@ function Print-AttandanceSheetGyogyaszat {
         [string]$OpenFile
     )
 
-    Set-PrinterDuplexMode -DuplexingMode "TwoSidedLongEdge"
+    try {
+        Set-DuplexingMode -Mode "Duplex"
+    }
+    catch {
+        Write-Log -Message "ERROR: $($_.Exception.Message)" -Level "ERROR"
+        exit 1
+    }
     
     # Open Excel workbook
     $Excel = New-Object -ComObject Excel.Application
@@ -155,7 +173,13 @@ function Print-AttandanceSheetKarbantarto {
         [string]$OpenFile
     )
 
-    Set-PrinterDuplexMode -DuplexingMode "TwoSidedLongEdge"
+    try {
+        Set-DuplexingMode -Mode "Duplex"
+    }
+    catch {
+        Write-Log -Message "ERROR: $($_.Exception.Message)" -Level "ERROR"
+        exit 1
+    }
     
     # Open Excel workbook
     $Excel = New-Object -ComObject Excel.Application
@@ -182,7 +206,13 @@ function Print-AttandanceSheetGepesz {
         [string]$OpenFile
     )
 
-    Set-PrinterDuplexMode -DuplexingMode "TwoSidedLongEdge"
+    try {
+        Set-DuplexingMode -Mode "Duplex"
+    }
+    catch {
+        Write-Log -Message "ERROR: $($_.Exception.Message)" -Level "ERROR"
+        exit 1
+    }
     
     # Open Excel workbook
     $Excel = New-Object -ComObject Excel.Application
