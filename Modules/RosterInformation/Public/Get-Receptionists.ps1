@@ -42,8 +42,11 @@ function Get-Receptionists {
     $roster = @()
 
     try {        
-        $roster += Get-Shift $worksheet 'Konfár Nikolett' $today
-        $roster += Get-Shift $worksheet 'Pivarcsi Ivett' $today
+        $roster += [PSCustomObject]@{
+                Name  = 'Konfár Nikolett'
+                Shift = 'x'
+            }
+        $roster += Get-Shift $worksheet 'Antal Natália' $today
         $roster += Get-Shift $worksheet 'Raduska Zsolt' $today
     } catch {
         Write-Log $_.Exception.Message -Level "DEBUG"
