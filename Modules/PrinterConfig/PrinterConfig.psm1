@@ -15,15 +15,11 @@
     along with this program. If not, see <https://www.gnu.org/licenses/>.  
 #>
 
-function Set-PrinterDuplexMode {
-    param (
-        [string]$PrinterName = (Get-CimInstance -ClassName Win32_Printer | Where-Object { $_.Default -eq $true }).Name,
-        [string]$DuplexingMode
-    )
-    try {
-        Set-PrintConfiguration -PrinterName $PrinterName -DuplexingMode $DuplexingMode | Out-Null
-        Write-Log -Message "Configure printer $PrinterName with duplexing mode $DuplexingMode." -Level INFO
-    } catch {
-        Write-Log -Message "Failed to configure printer $PrinterName with duplexing mode $DuplexingMode. Error: $_" -Level Error
-    }
-}
+Import-Module (Join-Path -Path $PSScriptRoot -ChildPath '..\LoggingSystem\LoggingSystem.psd1')
+
+#import public functions
+. $PSScriptRoot\Public\config.ps1
+
+Export-ModuleMember -Function Set-DuplexingMode
+
+Write-Log -Message "Module loaded: PrintNextMonthFolder"
