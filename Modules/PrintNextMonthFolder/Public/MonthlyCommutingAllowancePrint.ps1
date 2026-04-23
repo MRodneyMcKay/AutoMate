@@ -78,7 +78,13 @@ function Print-CommutingAllowancePages {
         [string]$PageRange
     )
 
-    Set-PrinterDuplexMode -DuplexingMode "OneSided"
+    try {
+        Set-DuplexingMode -Mode "Simplex"
+    }
+    catch {
+        Write-Log -Message "ERROR: $($_.Exception.Message)" -Level "ERROR"
+        exit 1
+    }
 
     $Background = 0
     $Range = [Microsoft.Office.Interop.Word.WdPrintOutRange]::wdPrintRangeOfPages
@@ -98,7 +104,13 @@ function Print-CommutingAllowancePages {
         [Type]::Missing
     )
 
-    Set-PrinterDuplexMode -DuplexingMode "TwoSidedLongEdge"
+    try {
+        Set-DuplexingMode -Mode "Duplex"
+    }
+    catch {
+        Write-Log -Message "ERROR: $($_.Exception.Message)" -Level "ERROR"
+        exit 1
+    }
 }
 
 # Function to clean up Word COM objects
