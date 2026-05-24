@@ -21,6 +21,7 @@ function Open-Emails {
     )
 
     $base = 'C:\Users\Hirossport\Hiros Sport Nonprofit Kft\Hiros-sport - Dokumentumok\Furdo\Recepcio\'
+
     $emails = "$base\Email sablonok\"
 
     Start-Process "OUTLOOK"
@@ -33,39 +34,52 @@ function Open-Emails {
     $outlook = $null
 
     while ($waitedTime -lt $maxWaitTime) {
+
         try {
+
             $outlook = [InteropCom]::GetActiveInstance("Outlook.Application", $true)
 
-            # Session existence alone is not enough,
-            # but it is enough for initial startup validation
             if ($outlook -and $outlook.Session) {
+
                 Write-Log -Message "Outlook COM initialized." -Level "INFO"
+
                 break
             }
+
         } catch {
+
             Write-Log -Message "Waiting for Outlook COM..." -Level "INFO"
         }
 
         Start-Sleep -Seconds 1
+
         $waitedTime++
     }
 
     # Fallback COM creation
     if (-not $outlook -or -not $outlook.Session) {
+
         Write-Log -Message "Outlook not ready after $maxWaitTime seconds. Creating COM object explicitly." -Level "WARNING"
 
         try {
+
             $outlook = New-Object -ComObject outlook.application
+
             Start-Sleep -Seconds 10
+
         } catch {
+
             Write-Log -Message "Failed to create Outlook application. Error: $_" -Level "ERROR"
+
             return
         }
     }
 
     # Final validation
     if (-not $outlook -or -not $outlook.Session) {
+
         Write-Log -Message "Outlook COM object is not functional after creation." -Level "ERROR"
+
         return
     }
 
@@ -95,6 +109,7 @@ function Open-Emails {
     }
 
     if ($Today.DayOfWeek -eq 'Tuesday') {
+
         $emailQueue += @{
             TemplatePath = "$emails\Órák.oft"
             Replacements = @{}
@@ -127,6 +142,8 @@ function Open-Emails {
 
                     $message = $_.Exception.Message
 
+                    Write-Log -Message "Outlook exception: $message" -Level "WARNING"
+
                     # Outlook modal dialog / busy state
                     if (
                         $message -like "*párbeszédpanel*" -or
@@ -137,7 +154,29 @@ function Open-Emails {
 
                         Write-Log -Message "Outlook is blocked by a dialog. Waiting before retry..." -Level "WARNING"
 
+                        # Re-acquire COM proxy after modal dialog failures
+                        try {
+
+                            if ($outlook) {
+
+                                [System.Runtime.InteropServices.Marshal]::ReleaseComObject($outlook) | Out-Null
+
+                                $outlook = $null
+                            }
+
+                        } catch {
+                        }
+
                         Start-Sleep -Seconds 2
+
+                        try {
+
+                            $outlook = [InteropCom]::GetActiveInstance("Outlook.Application", $true)
+
+                        } catch {
+
+                            Write-Log -Message "Failed to reacquire Outlook COM object. Retrying..." -Level "WARNING"
+                        }
 
                         continue
                     }
@@ -149,11 +188,15 @@ function Open-Emails {
         }
 
     } catch {
+
         Write-Log -Message "Error opening email templates: $_" -Level "ERROR" -ShowMessageBox
+
     } finally {
 
         if ($outlook) {
+
             [System.Runtime.InteropServices.Marshal]::ReleaseComObject($outlook) | Out-Null
+
             $outlook = $null
         }
     }
