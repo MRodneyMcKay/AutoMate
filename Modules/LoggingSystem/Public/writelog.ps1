@@ -19,46 +19,92 @@ function Write-Log {
     param (
         [string]$Message,
         [ValidateSet("INFO", "WARNING", "ERROR", "DEBUG")]
-        [string]$Level = "INFO", 
-        [switch]$ShowMessageBox, 
-        [string]$MsgBoxTitle = "HIBA", 
+        [string]$Level = "INFO",
+        [switch]$ShowMessageBox,
+        [string]$MsgBoxTitle = "HIBA",
         [string]$MsgBoxMessage
     )
 
-    # Create a timestamp
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    # Create timestamp
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss.fff"
 
     # Create ASCII Art for "AutoMate"
     $asciiArt = Get-AsciiArt
-    $date =Get-Date -Format "MM-dd"
+
+    # Build log path
+    $date = Get-Date -Format "MM-dd"
+
     $logPath = Join-Path -Path $PSScriptRoot -ChildPath "..\..\..\logs\"
+
+    if (-not (Test-Path $logPath)) {
+        New-Item -Path $logPath -ItemType Directory -Force | Out-Null
+    }
+
     $resolvedLogPath = (Resolve-Path -Path $logPath).Path
+
     $logFile = Join-Path -Path $resolvedLogPath -ChildPath "$date.log"
-    if (-Not (Test-Path $resolvedLogPath)) {
-        New-Item -Path $resolvedLogPath -ItemType Directory -Force
-    }    
-    # Get script and function details from the call stack
+
+    # Get script and function details from call stack
     $callStack = Get-PSCallStack
+
     $scriptName = $callStack[1].ScriptName
     $functionName = $callStack[1].FunctionName
     $lineNumber = $callStack[1].ScriptLineNumber
 
     # If running interactively, use defaults
-    if (-not $scriptName) { $scriptName = "InteractiveShell" } else {  $scriptName = [System.IO.Path]::GetFileName($scriptName)}
-    if (-not $functionName) { $functionName = "GlobalScope" }
-    if (-not $lineNumber) { $lineNumber = "Unknown" }
-
-    # Format log entry
-    $logEntry = "[$timestamp] [$Level] [$scriptName] [$functionName] [Line $lineNumber] $Message"
-
-    # Ensure the log file exists and append the ASCII art and message
-    if (-not (Test-Path $logFile)) {
-        # Create log file and add ASCII Art header
-        $asciiArt | Out-File -FilePath $logFile -Encoding UTF8
+    if (-not $scriptName) {
+        $scriptName = "InteractiveShell"
+    } else {
+        $scriptName = [System.IO.Path]::GetFileName($scriptName)
     }
 
-     # Append to log file
-     Add-Content -Path $LogFile -Value $logEntry
+    if (-not $functionName) {
+        $functionName = "GlobalScope"
+    }
+
+    if (-not $lineNumber) {
+        $lineNumber = "Unknown"
+    }
+
+    # Thread / Job information
+    $threadId = [System.Threading.Thread]::CurrentThread.ManagedThreadId
+
+    $jobName = "Main"
+
+    try {
+        if ($PSPrivateMetadata.JobName) {
+            $jobName = $PSPrivateMetadata.JobName
+        }
+    } catch {
+    }
+
+    # Format log entry
+    $logEntry = "[$timestamp] [$Level] [Job: $jobName] [Thread: $threadId] [$scriptName] [$functionName] [Line $lineNumber] $Message"
+
+    # Create mutex for thread-safe logging
+    $mutexName = "Global\AutoMateLogMutex"
+
+    $mutex = [System.Threading.Mutex]::new($false, $mutexName)
+
+    try {
+
+        # Wait for exclusive access
+        $null = $mutex.WaitOne()
+
+        # Ensure log file exists
+        if (-not (Test-Path $logFile)) {
+
+            $asciiArt | Out-File -FilePath $logFile -Encoding UTF8
+        }
+
+        # Append log entry safely
+        Add-Content -Path $logFile -Value $logEntry
+
+    } finally {
+
+        $mutex.ReleaseMutex()
+        $mutex.Dispose()
+    }
 
     # Write to console with colors
     switch ($Level) {
@@ -66,18 +112,34 @@ function Write-Log {
         "WARNING" { Write-Host $logEntry -ForegroundColor Yellow }
         "ERROR"   { Write-Host $logEntry -ForegroundColor Red }
         "DEBUG"   { Write-Host $logEntry -ForegroundColor Gray }
-    }   
-    # Map log level → WPF icon 
-    $icon = switch ($Level) { 
-        "INFO" { [System.Windows.MessageBoxImage]::Information } 
-        "WARNING" { [System.Windows.MessageBoxImage]::Warning } 
+    }
+
+    # Map log level → WPF icon
+    $icon = switch ($Level) {
+        "INFO" { [System.Windows.MessageBoxImage]::Information }
+        "WARNING" { [System.Windows.MessageBoxImage]::Warning }
         "ERROR" { [System.Windows.MessageBoxImage]::Error }
         "DEBUG" { [System.Windows.MessageBoxImage]::None }
     }
-    # Show message box if requested 
-    if ($ShowMessageBox) { 
-        $finalTitle = $MsgBoxTitle ? $MsgBoxTitle : "$scriptName : $functionName" 
-        $finalMessage = $MsgBoxMessage ? $MsgBoxMessage : $Message 
-        Show-Message -Message $finalMessage -Title $finalTitle -Icon $icon 
+
+    # Show message box if requested
+    if ($ShowMessageBox) {
+
+        $finalTitle = $MsgBoxTitle
+
+        if (-not $finalTitle) {
+            $finalTitle = "$scriptName : $functionName"
+        }
+
+        $finalMessage = $MsgBoxMessage
+
+        if (-not $finalMessage) {
+            $finalMessage = $Message
+        }
+
+        Show-Message `
+            -Message $finalMessage `
+            -Title $finalTitle `
+            -Icon $icon
     }
 }
