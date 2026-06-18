@@ -20,44 +20,97 @@ $registryPath = "HKCU:\Software\Script"
 $ModulePath = Join-Path -Path $PSScriptRoot -ChildPath "..\Modules\"
 $resolvedModulegPath = (Resolve-Path -Path $ModulePath).Path
 
-Import-Module (Join-Path -Path $resolvedModulegPath -ChildPath 'LoggingSystem\LoggingSystem.psd1')
-Import-Module (Join-Path -Path $resolvedModulegPath -ChildPath 'RosterInformation\RosterInformation.psd1')
-Import-Module (Join-Path -Path $resolvedModulegPath -ChildPath 'CreateMaintanenceDir\CreateMaintanenceDir.psd1')
-Import-Module (Join-Path -Path $resolvedModulegPath -ChildPath 'StudentWorkReport\StudentWorkReport.psd1')
-Import-Module (Join-Path -Path $resolvedModulegPath -ChildPath 'OpenEmails\OpenEmails.psd1')
-Import-Module (Join-Path -Path $resolvedModulegPath -ChildPath 'LaneOccupancy\LaneOccupancy.psd1')
+# Load only what main thread needs
+Import-Module (Join-Path $resolvedModulegPath 'LoggingSystem\LoggingSystem.psd1')
+Import-Module (Join-Path $resolvedModulegPath 'CreateMaintanenceDir\CreateMaintanenceDir.psd1')
 
-create-Directories
+Import-Module ThreadJob
 
-if ($(Get-ItemPropertyValue -Path $registryPath -Name EmailLastShown) -ne (Get-Date).Day) {
-    Write-Log -Message "Emailek megnyitása"
-    Open-Emails
-    Set-ItemProperty -Path $registryPath -Name EmailLastShown -value (Get-Date).Day
-} else {
-    Write-Log -Message "Emailek már megnyitva voltak"
-}
+# THREAD 01 - EMAILS
+$job1 = Start-ThreadJob -Name "Emails" -ScriptBlock {
+    param($registryPath, $resolvedModulegPath)
 
-if ($(Get-ItemPropertyValue -Path $registryPath -Name YesterdaysWorkingHours) -ne (Get-Date).Day) {
-    Write-Log -Message "Diákelszámolás elkészítése"
-    $roster = Get-Receptionists
-    $approved = @(1, 112, "1/9")
-    open-StudentWorkReportFurdo -fillCompletely ((($roster | Where-Object { $_.Name -eq 'Raduska Zsolt' }).Shift -in $approved -or ($roster | Where-Object { $_.Name -eq 'Konfár Nikolett' }).Shift -in $approved -or ($roster | Where-Object { $_.Name -eq 'Antal Natália' }).Shift -in $approved))
-    if ((Get-Date).Month -in 6,7,8,9) {
-        open-StudentWorkReportStrand -fillCompletely ((($roster | Where-Object { $_.Name -eq 'Raduska Zsolt' }).Shift -in $approved -or ($roster | Where-Object { $_.Name -eq 'Konfár Nikolett' }).Shift -in $approved -or ($roster | Where-Object { $_.Name -eq 'Antal Natália' }).Shift -in $approved))
+    Import-Module (Join-Path $resolvedModulegPath 'LoggingSystem\LoggingSystem.psd1')
+    Import-Module (Join-Path $resolvedModulegPath 'OpenEmails\OpenEmails.psd1')
+
+    if ((Get-ItemPropertyValue -Path $registryPath -Name EmailLastShown) -ne (Get-Date).Day) {
+        Write-Log -Message "Emailek megnyitása"
+        Open-Emails
+        Set-ItemProperty -Path $registryPath -Name EmailLastShown -value (Get-Date).Day
+    } else {
+        Write-Log -Message "Emailek már megnyitva voltak"
     }
-    Set-ItemProperty -Path $registryPath -Name YesterdaysWorkingHours -value (Get-Date).Day
-} else {
-    Write-Log -Message "Diákelszámolás már elkészült"
+} -ArgumentList $registryPath, $resolvedModulegPath
+
+
+# THREAD 02 - STUDENT REPORT
+$job2 = Start-ThreadJob -Name "StudentReport" -ScriptBlock {
+    param($registryPath, $resolvedModulegPath)
+
+    Import-Module (Join-Path $resolvedModulegPath 'LoggingSystem\LoggingSystem.psd1')
+    Import-Module (Join-Path $resolvedModulegPath 'RosterInformation\RosterInformation.psd1')
+    Import-Module (Join-Path $resolvedModulegPath 'StudentWorkReport\StudentWorkReport.psd1')
+
+    if ((Get-ItemPropertyValue -Path $registryPath -Name YesterdaysWorkingHours) -ne (Get-Date).Day) {
+        Write-Log -Message "Diákelszámolás elkészítése"
+
+        $roster = Get-Receptionists
+        $approved = @(1, 112, "1/9")
+
+        $fill = (
+            ($roster | Where-Object Name -eq 'Raduska Zsolt').Shift -in $approved -or
+            ($roster | Where-Object Name -eq 'Konfár Nikolett').Shift -in $approved -or
+            ($roster | Where-Object Name -eq 'Antal Natália').Shift -in $approved
+        )
+
+        open-StudentWorkReportFurdo -fillCompletely $fill
+
+        if ((Get-Date).Month -in 6,7,8,9) {
+            open-StudentWorkReportStrand -fillCompletely $fill
+        }
+
+        if ((Get-Date).Month -in 6,7,8,9) {
+            open-StudentWorkReportBeach -fillCompletely $fill
+        }
+
+        Set-ItemProperty -Path $registryPath -Name YesterdaysWorkingHours -value (Get-Date).Day
+    } else {
+        Write-Log -Message "Diákelszámolás már elkészült"
+    }
+} -ArgumentList $registryPath, $resolvedModulegPath
+
+
+# THREAD 03 - LANE PRINTING
+$job3 = Start-ThreadJob -Name "LanePrint" -ScriptBlock {
+    param($registryPath, $resolvedModulegPath)
+
+    Import-Module (Join-Path $resolvedModulegPath 'LoggingSystem\LoggingSystem.psd1')
+    Import-Module (Join-Path $resolvedModulegPath 'LaneOccupancy\LaneOccupancy.psd1')
+
+    if ((Get-ItemPropertyValue -Path $registryPath -Name LaneSchedulePrinted) -ne (Get-Date).Day) {
+        Write-Log -Message "Pályabeosztás nyomtatása"
+        Print-Today
+        Set-ItemProperty -Path $registryPath -Name LaneSchedulePrinted -value (Get-Date).Day
+    } else {
+        Write-Log -Message "Pályabeosztás már nyomtatva volt"
+    }
+} -ArgumentList $registryPath, $resolvedModulegPath
+
+
+# WAIT FOR ALL THREADS
+$jobs = @($job1, $job2, $job3)
+
+$jobs | Wait-Job
+
+# Collect output + errors
+foreach ($job in $jobs) {
+    Receive-Job $job -ErrorAction SilentlyContinue
 }
 
+# Cleanup
+$jobs | Remove-Job
+
+# FINAL STEP (AFTER THREADS)
+create-Directories
 Start-Process msedge
-
-if ($(Get-ItemPropertyValue -Path $registryPath -Name LaneSchedulePrinted) -ne (Get-Date).Day) {
-    Write-Log -Message "Pályabeosztás nyomtatása"
-    Print-Today
-    Set-ItemProperty -Path $registryPath -Name LaneSchedulePrinted -value (Get-Date).Day
-} else {
-    Write-Log -Message "Pályabeosztás már nyomtatva volt"
-}
-
 Set-ItemProperty -Path $registryPath -Name LastRun -value (Get-Date).Day

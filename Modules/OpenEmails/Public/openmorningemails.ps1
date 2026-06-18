@@ -19,77 +19,188 @@ function Open-Emails {
     param (
         [datetime]$Today = (Get-Date)
     )
+
     $base = 'C:\Users\Hirossport\Hiros Sport Nonprofit Kft\Hiros-sport - Dokumentumok\Furdo\Recepcio\'
+
     $emails = "$base\Email sablonok\"
+
     Start-Process "OUTLOOK"
+
     Write-Log -Message "Starting Outlook..." -Level "INFO"
-    # Wait for Outlook to initialize by checking every second
-    $maxWaitTime = 30 # Maximum wait time in seconds (5 minutes)
+
+    # Wait for Outlook COM initialization
+    $maxWaitTime = 30
     $waitedTime = 0
     $outlook = $null
 
     while ($waitedTime -lt $maxWaitTime) {
+
         try {
+
             $outlook = [InteropCom]::GetActiveInstance("Outlook.Application", $true)
+
             if ($outlook -and $outlook.Session) {
-                Write-Log -Message "Outlook is ready." -Level "INFO"
+
+                Write-Log -Message "Outlook COM initialized." -Level "INFO"
+
                 break
             }
+
         } catch {
-            # Ignore errors during the wait period
-            Write-Log -Message "Waiting for Outlook to be ready..." -Level "INFO"
+
+            Write-Log -Message "Waiting for Outlook COM..." -Level "INFO"
         }
+
         Start-Sleep -Seconds 1
+
         $waitedTime++
     }
 
-    # If Outlook is still not ready, explicitly create a COM object and wait 10 seconds
+    # Fallback COM creation
     if (-not $outlook -or -not $outlook.Session) {
-        Write-Output "Outlook not ready after $maxWaitTime seconds. Creating COM object explicitly."
+
+        Write-Log -Message "Outlook not ready after $maxWaitTime seconds. Creating COM object explicitly." -Level "WARNING"
+
         try {
+
             $outlook = New-Object -ComObject outlook.application
-            Start-Sleep -Seconds 10 # Wait for initialization
+
+            Start-Sleep -Seconds 10
+
         } catch {
+
             Write-Log -Message "Failed to create Outlook application. Error: $_" -Level "ERROR"
-            return # Exit the function if Outlook cannot be created
+
+            return
         }
     }
 
-    # Validate Outlook object
+    # Final validation
     if (-not $outlook -or -not $outlook.Session) {
+
         Write-Log -Message "Outlook COM object is not functional after creation." -Level "ERROR"
+
         return
     }
 
-    try {
-        # Open BEVLÉT email
-        $bevletTemplate = "$emails\BEVLÉT.oft"
-        Open-EmailTemplate -Outlook $outlook -TemplatePath $bevletTemplate -Replacements @{
+    # Build email queue
+    $emailQueue = @()
+
+    $emailQueue += @{
+        TemplatePath = "$emails\BEVLÉT.oft"
+        Replacements = @{
             "2023.??.??." = ($Today.AddDays(-1)).ToString("yyyy.MM.dd.")
-        } -subject "BEVLÉT"
-
-        # Open Bérleteken fennmaradt alkalmak email
-        $berletTemplate = "$emails\Bérleteken fennmaradt alkalmak.oft"
-        Open-EmailTemplate -Outlook $outlook -TemplatePath $berletTemplate -Replacements @{
-            "2023.??.??." = ($Today.ToString("yyyy.MM.dd.") + " nyitás")
-        } -subject "Bérletes"
-
-        # Open DIÁKOK email
-        $diakokTemplate = "$emails\DIÁKOK.oft"
-        Open-EmailTemplate -Outlook $outlook -TemplatePath $diakokTemplate -Replacements @{} -subject "Diákok"
-        # Open karórák email only on Mondays
-        if ($Today.DayOfWeek -eq 'Tuesday') {
-            $karorakTemplate = "$emails\Órák.oft"
-            Open-EmailTemplate -Outlook $outlook -TemplatePath $karorakTemplate -Replacements @{} -subject "Karórák"
         }
+        Subject = "BEVLÉT"
+    }
+
+    $emailQueue += @{
+        TemplatePath = "$emails\Bérleteken fennmaradt alkalmak.oft"
+        Replacements = @{
+            "2023.??.??." = ($Today.ToString("yyyy.MM.dd.") + " nyitás")
+        }
+        Subject = "Bérletes"
+    }
+
+    $emailQueue += @{
+        TemplatePath = "$emails\DIÁKOK.oft"
+        Replacements = @{}
+        Subject = "Diákok"
+    }
+
+    if ($Today.DayOfWeek -eq 'Tuesday') {
+
+        $emailQueue += @{
+            TemplatePath = "$emails\Órák.oft"
+            Replacements = @{}
+            Subject = "Karórák"
+        }
+    }
+
+    # Process email queue
+    try {
+
+        foreach ($email in $emailQueue) {
+
+            while ($true) {
+
+                try {
+
+                    Write-Log -Message "Opening email: $($email.Subject)" -Level "INFO"
+
+                    Open-EmailTemplate `
+                        -Outlook $outlook `
+                        -TemplatePath $email.TemplatePath `
+                        -Replacements $email.Replacements `
+                        -subject $email.Subject
+
+                    Write-Log -Message "Successfully opened: $($email.Subject)" -Level "INFO"
+
+                    break
+
+                } catch {
+
+                    $message = $_.Exception.Message
+
+                    Write-Log -Message "Outlook exception: $message" -Level "WARNING"
+
+                    # Outlook modal dialog / busy state
+                    if (
+                        $message -like "*párbeszédpanel*" -or
+                        $message -like "*dialog box*" -or
+                        $message -like "*cannot perform this action*" -or
+                        $message -like "*another program is using Outlook*"
+                    ) {
+
+                        Write-Log -Message "Outlook is blocked by a dialog. Waiting before retry..." -Level "WARNING"
+
+                        # Re-acquire COM proxy after modal dialog failures
+                        try {
+
+                            if ($outlook) {
+
+                                [System.Runtime.InteropServices.Marshal]::ReleaseComObject($outlook) | Out-Null
+
+                                $outlook = $null
+                            }
+
+                        } catch {
+                        }
+
+                        Start-Sleep -Seconds 2
+
+                        try {
+
+                            $outlook = [InteropCom]::GetActiveInstance("Outlook.Application", $true)
+
+                        } catch {
+
+                            Write-Log -Message "Failed to reacquire Outlook COM object. Retrying..." -Level "WARNING"
+                        }
+
+                        continue
+                    }
+
+                    # Unknown error
+                    throw
+                }
+            }
+        }
+
     } catch {
+
         Write-Log -Message "Error opening email templates: $_" -Level "ERROR" -ShowMessageBox
+
     } finally {
+
         if ($outlook) {
-            [System.Runtime.InteropServices.Marshal]::ReleaseComObject($outlook)
+
+            [System.Runtime.InteropServices.Marshal]::ReleaseComObject($outlook) | Out-Null
+
             $outlook = $null
         }
     }
+
     [System.GC]::Collect()
     [System.GC]::WaitForPendingFinalizers()
 }
