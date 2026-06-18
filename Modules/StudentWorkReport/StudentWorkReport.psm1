@@ -25,7 +25,8 @@ Import-Module (Join-Path -Path $PSScriptRoot -ChildPath '..\LoggingSystem\Loggin
 #import public functions
 . $PSScriptRoot\Public\Furdoreport.ps1
 . $PSScriptRoot\Public\StrandReport.ps1
+. $PSScriptRoot\Public\BeachReport.ps1
 
-Export-ModuleMember -Function open-StudentWorkReportFurdo, open-StudentWorkReportStrand
+Export-ModuleMember -Function open-StudentWorkReportFurdo, open-StudentWorkReportStrand, open-StudentWorkReportBeach
 
 Write-Log -Message "Module loaded: StudentWorkReport"
