@@ -109,8 +109,8 @@ function Get-PageRange {
         [int]$EndMultiplier
     )
     $next = (Get-NextMonthAndYearOffset)
-    $Start =  $StartMultiplier + ($next.Month * 6)
-    $End = $EndMultiplier + ($next.Month * 6)
+    $Start =  $StartMultiplier + ($next.Month * 8)
+    $End = $EndMultiplier + ($next.Month * 8)
     return "$Start-$End"
 }
 
@@ -146,9 +146,16 @@ function Print-RequestFrontOffice {
     Print-Igeny -FilePath $FilePath -StartMultiplier 3 -EndMultiplier 4
 }
 
-function Print-RequestGyogyaszat {
+function Print-RequestDombBeach {
     param (
         [string]$FilePath = "C:\Users\Hirossport\Hiros Sport Nonprofit Kft\Hiros-sport - Dokumentumok\Furdo\Recepcio\Nyomtatni\Jelenlétik, igények\Igények_$((Get-NextMonthAndYearOffset).Year).docx"
     )
     Print-Igeny -FilePath $FilePath -StartMultiplier 5 -EndMultiplier 6
+}
+
+function Print-RequestGyogyaszat {
+    param (
+        [string]$FilePath = "C:\Users\Hirossport\Hiros Sport Nonprofit Kft\Hiros-sport - Dokumentumok\Furdo\Recepcio\Nyomtatni\Jelenlétik, igények\Igények_$((Get-NextMonthAndYearOffset).Year).docx"
+    )
+    Print-Igeny -FilePath $FilePath -StartMultiplier 7 -EndMultiplier 8
 }
