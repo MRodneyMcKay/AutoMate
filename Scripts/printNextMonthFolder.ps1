@@ -55,6 +55,15 @@ $TaskGroups = @(
         )
     },
     @{
+        Header = "Domb Beach"
+        Tasks = @{
+            "Igények - Domb Beach" = {
+                Write-Log "Printing schedule requests for Domb Beach"
+                Print-RequestDombBeach
+            }
+        }
+    },
+    @{
         Header = 'Karbantartók'
         Tasks = @(
             @{ Name = 'Jelenléti ív - Karbantartó'; RequiresSheetPath = $true; Action = { Write-Log 'Printing attendance sheets for the genitors'; Print-AttandanceSheetKarbantarto -OpenFile $script:SelectedSheetPath } }
