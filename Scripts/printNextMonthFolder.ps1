@@ -84,9 +84,15 @@ $TaskGroups = @(
 [xml]$XAML = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Print Manager" Height="760" Width="1100"
-        WindowStartupLocation="CenterScreen" ResizeMode="CanResize"
-        FontFamily="Segoe UI" FontSize="14" Background="{DynamicResource BackgroundBrush}">
+        Title="Print Manager"
+        Height="760"
+        Width="1100"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="CanResize"
+        AllowDrop="True"
+        FontFamily="Segoe UI"
+        FontSize="14"
+        Background="{DynamicResource BackgroundBrush}">
     <Window.Resources>
         $(Get-WpfSharedStylesXaml -IncludeButtonStyles -IncludeTextBoxStyles)
         <Style TargetType="TextBlock">
@@ -173,6 +179,32 @@ $BrowseButton = $Window.FindName('BrowseButton')
 $PathBox = $Window.FindName('PathBox')
 $CloseButton = $Window.FindName('CloseButton')
 
+function Set-AttendanceSheetPath {
+    param(
+        [string]$Path
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Path) -or -not (Test-Path $Path)) {
+        return
+    }
+
+    $extension = [System.IO.Path]::GetExtension($Path).ToLowerInvariant()
+
+    if ($extension -notin '.xls', '.xlsx', '.xlsm') {
+        [System.Windows.MessageBox]::Show(
+            'Csak Excel fájl (*.xls, *.xlsx, *.xlsm) választható ki.',
+            'Érvénytelen fájl',
+            'OK',
+            'Warning'
+        ) | Out-Null
+
+        return
+    }
+
+    $script:SelectedSheetPath = (Resolve-Path $Path).Path
+    $PathBox.Text = $script:SelectedSheetPath
+}
+
 $Tasks = @{}
 $CheckBoxes = @{}
 $TaskMetadata = @{}
@@ -223,9 +255,50 @@ $BrowseButton.Add_Click({
     $dialog.InitialDirectory = $env:USERPROFILE
 
     if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
-        $script:SelectedSheetPath = $dialog.FileName
-        $PathBox.Text = $script:SelectedSheetPath
+        Set-AttendanceSheetPath $dialog.FileName
     }
+})
+
+$Window.Add_DragOver({
+
+    if ($_.Data.GetDataPresent([System.Windows.DataFormats]::FileDrop)) {
+
+        $files = $_.Data.GetData([System.Windows.DataFormats]::FileDrop)
+
+        if ($files.Count -eq 1) {
+
+            $extension = [System.IO.Path]::GetExtension($files[0]).ToLowerInvariant()
+
+            if ($extension -in '.xls', '.xlsx', '.xlsm') {
+                $_.Effects = [System.Windows.DragDropEffects]::Copy
+            }
+            else {
+                $_.Effects = [System.Windows.DragDropEffects]::None
+            }
+        }
+        else {
+            $_.Effects = [System.Windows.DragDropEffects]::None
+        }
+    }
+    else {
+        $_.Effects = [System.Windows.DragDropEffects]::None
+    }
+
+    $_.Handled = $true
+})
+
+$Window.Add_Drop({
+
+    if ($_.Data.GetDataPresent([System.Windows.DataFormats]::FileDrop)) {
+
+        $files = $_.Data.GetData([System.Windows.DataFormats]::FileDrop)
+
+        if ($files.Count -gt 0) {
+            Set-AttendanceSheetPath $files[0]
+        }
+    }
+
+    $_.Handled = $true
 })
 
 $RunButton.Add_Click({
