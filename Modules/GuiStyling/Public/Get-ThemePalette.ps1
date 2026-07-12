@@ -25,7 +25,7 @@ function Convert-ColorToHex {
     return "#{0:X2}{1:X2}{2:X2}" -f $Color.R, $Color.G, $Color.B
 }
 
-function Blend-Colors {
+function Merge-Colors {
     [CmdletBinding()]
     param(
         [System.Windows.Media.Color]$BaseColor,
@@ -39,6 +39,70 @@ function Blend-Colors {
     $B = [int][Math]::Round(($BaseColor.B * $Ratio) + ($OverlayColor.B * (1 - $Ratio)))
 
     return [System.Windows.Media.Color]::FromRgb([byte]$R, [byte]$G, [byte]$B)
+}
+
+function Get-RelativeLuminance {
+    [CmdletBinding()]
+    param(
+        [System.Windows.Media.Color]$Color
+    )
+
+    $normalize = {
+        param([double]$Channel)
+        $Channel = $Channel / 255.0
+        if ($Channel -le 0.03928) {
+            return $Channel / 12.92
+        }
+        return [Math]::Pow((($Channel + 0.055) / 1.055), 2.4)
+    }
+
+    $R = & $normalize -Channel $Color.R
+    $G = & $normalize -Channel $Color.G
+    $B = & $normalize -Channel $Color.B
+
+    return 0.2126 * $R + 0.7152 * $G + 0.0722 * $B
+}
+
+function Get-ContrastRatio {
+    [CmdletBinding()]
+    param(
+        [System.Windows.Media.Color]$Foreground,
+        [System.Windows.Media.Color]$Background
+    )
+
+    $L1 = Get-RelativeLuminance -Color $Foreground
+    $L2 = Get-RelativeLuminance -Color $Background
+
+    if ($L1 -lt $L2) {
+        return ($L1 + 0.05) / ($L2 + 0.05)
+    }
+
+    return ($L2 + 0.05) / ($L1 + 0.05)
+}
+
+function Resolve-AccessibleAccentColor {
+    [CmdletBinding()]
+    param(
+        [System.Windows.Media.Color]$AccentColor,
+        [System.Windows.Media.Color]$BackgroundColor,
+        [bool]$IsDark
+    )
+
+    if (-not $IsDark) {
+        return $AccentColor
+    }
+
+    $overlayColor = [System.Windows.Media.Color]::FromRgb(255, 255, 255)
+    $candidate = $AccentColor
+
+    for ($ratio = 0.0; $ratio -le 1.0; $ratio += 0.05) {
+        $candidate = Merge-Colors -BaseColor $AccentColor -OverlayColor $overlayColor -Ratio $ratio
+        if ((Get-ContrastRatio -Foreground $candidate -Background $BackgroundColor) -ge 4.5) {
+            return $candidate
+        }
+    }
+
+    return $candidate
 }
 
 function Get-ThemePalette {
@@ -63,28 +127,29 @@ function Get-ThemePalette {
     }
 
     if ($IsDark) {
-        $BackgroundColor = Blend-Colors -BaseColor $AccentColor -OverlayColor ([System.Windows.Media.Color]::FromRgb(18, 18, 18)) -Ratio 0.10
-        $SurfaceColor = Blend-Colors -BaseColor $AccentColor -OverlayColor ([System.Windows.Media.Color]::FromRgb(30, 30, 30)) -Ratio 0.18
-        $BorderColor = Blend-Colors -BaseColor $AccentColor -OverlayColor ([System.Windows.Media.Color]::FromRgb(90, 90, 90)) -Ratio 0.24
+        $BackgroundColor = Merge-Colors -BaseColor $AccentColor -OverlayColor ([System.Windows.Media.Color]::FromRgb(18, 18, 18)) -Ratio 0.10
+        $SurfaceColor = Merge-Colors -BaseColor $AccentColor -OverlayColor ([System.Windows.Media.Color]::FromRgb(30, 30, 30)) -Ratio 0.18
+        $BorderColor = Merge-Colors -BaseColor $AccentColor -OverlayColor ([System.Windows.Media.Color]::FromRgb(90, 90, 90)) -Ratio 0.24
         $TextColor = [System.Windows.Media.Color]::FromRgb(248, 250, 252)
         $MutedColor = [System.Windows.Media.Color]::FromRgb(203, 213, 225)
-        $HoverColor = Blend-Colors -BaseColor $AccentColor -OverlayColor ([System.Windows.Media.Color]::FromRgb(48, 48, 48)) -Ratio 0.28
-        $PressedColor = Blend-Colors -BaseColor $AccentColor -OverlayColor ([System.Windows.Media.Color]::FromRgb(40, 40, 40)) -Ratio 0.32
-        $SelectionColor = Blend-Colors -BaseColor $AccentColor -OverlayColor ([System.Windows.Media.Color]::FromRgb(60, 60, 60)) -Ratio 0.30
+        $HoverColor = Merge-Colors -BaseColor $AccentColor -OverlayColor ([System.Windows.Media.Color]::FromRgb(48, 48, 48)) -Ratio 0.28
+        $PressedColor = Merge-Colors -BaseColor $AccentColor -OverlayColor ([System.Windows.Media.Color]::FromRgb(40, 40, 40)) -Ratio 0.32
+        $SelectionColor = Merge-Colors -BaseColor $AccentColor -OverlayColor ([System.Windows.Media.Color]::FromRgb(60, 60, 60)) -Ratio 0.30
     }
     else {
-        $BackgroundColor = Blend-Colors -BaseColor $AccentColor -OverlayColor ([System.Windows.Media.Color]::FromRgb(248, 250, 252)) -Ratio 0.08
-        $SurfaceColor = Blend-Colors -BaseColor $AccentColor -OverlayColor ([System.Windows.Media.Color]::FromRgb(255, 255, 255)) -Ratio 0.04
-        $BorderColor = Blend-Colors -BaseColor $AccentColor -OverlayColor ([System.Windows.Media.Color]::FromRgb(209, 213, 219)) -Ratio 0.12
+        $BackgroundColor = Merge-Colors -BaseColor $AccentColor -OverlayColor ([System.Windows.Media.Color]::FromRgb(248, 250, 252)) -Ratio 0.08
+        $SurfaceColor = Merge-Colors -BaseColor $AccentColor -OverlayColor ([System.Windows.Media.Color]::FromRgb(255, 255, 255)) -Ratio 0.04
+        $BorderColor = Merge-Colors -BaseColor $AccentColor -OverlayColor ([System.Windows.Media.Color]::FromRgb(209, 213, 219)) -Ratio 0.12
         $TextColor = [System.Windows.Media.Color]::FromRgb(17, 24, 39)
         $MutedColor = [System.Windows.Media.Color]::FromRgb(107, 114, 128)
-        $HoverColor = Blend-Colors -BaseColor $AccentColor -OverlayColor ([System.Windows.Media.Color]::FromRgb(249, 250, 251)) -Ratio 0.10
-        $PressedColor = Blend-Colors -BaseColor $AccentColor -OverlayColor ([System.Windows.Media.Color]::FromRgb(229, 231, 235)) -Ratio 0.14
-        $SelectionColor = Blend-Colors -BaseColor $AccentColor -OverlayColor ([System.Windows.Media.Color]::FromRgb(239, 244, 255)) -Ratio 0.20
+        $HoverColor = Merge-Colors -BaseColor $AccentColor -OverlayColor ([System.Windows.Media.Color]::FromRgb(249, 250, 251)) -Ratio 0.10
+        $PressedColor = Merge-Colors -BaseColor $AccentColor -OverlayColor ([System.Windows.Media.Color]::FromRgb(229, 231, 235)) -Ratio 0.14
+        $SelectionColor = Merge-Colors -BaseColor $AccentColor -OverlayColor ([System.Windows.Media.Color]::FromRgb(239, 244, 255)) -Ratio 0.20
     }
 
-    $PrimaryHoverColor = Blend-Colors -BaseColor $AccentColor -OverlayColor ([System.Windows.Media.Color]::FromRgb(255, 255, 255)) -Ratio 0.14
-    $PrimaryPressedColor = Blend-Colors -BaseColor $AccentColor -OverlayColor ([System.Windows.Media.Color]::FromRgb(0, 0, 0)) -Ratio 0.16
+    $AccentColor = Resolve-AccessibleAccentColor -AccentColor $AccentColor -BackgroundColor $BackgroundColor -IsDark $IsDark
+    $PrimaryHoverColor = Merge-Colors -BaseColor $AccentColor -OverlayColor ([System.Windows.Media.Color]::FromRgb(255, 255, 255)) -Ratio 0.14
+    $PrimaryPressedColor = Merge-Colors -BaseColor $AccentColor -OverlayColor ([System.Windows.Media.Color]::FromRgb(0, 0, 0)) -Ratio 0.16
 
     return [ordered]@{
         AccentHex = Convert-ColorToHex -Color $AccentColor

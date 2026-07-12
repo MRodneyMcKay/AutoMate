@@ -24,4 +24,4 @@ Add-Type -AssemblyName WindowsBase -ErrorAction Stop
 . $PSScriptRoot\Public\Get-WpfSharedStylesXaml.ps1
 . $PSScriptRoot\Public\Show-ModernInputBox.ps1
 
-Export-ModuleMember -Function Convert-ColorToHex, Blend-Colors, Get-ThemePalette, Get-SharedButtonStylesXaml, Get-WpfSharedStylesXaml, Show-ModernInputBox
+Export-ModuleMember -Function Convert-ColorToHex, Merge-Colors, Get-ThemePalette, Get-SharedButtonStylesXaml, Get-WpfSharedStylesXaml, Show-ModernInputBox
