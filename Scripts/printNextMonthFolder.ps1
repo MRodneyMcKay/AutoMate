@@ -160,10 +160,32 @@ $TaskGroups = @(
             </StackPanel>
         </Border>
 
-        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
-            <Button Name="RunButton" Content="Nyomtatás" Style="{StaticResource PrimaryButton}" Width="140" Margin="0,0,10,0"/>
-            <Button Name="CloseButton" Content="Bezárás" Width="110"/>
-        </StackPanel>
+        <Grid Grid.Row="3" Margin="0,8,0,0">
+    <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto"/>
+        <ColumnDefinition Width="*"/>
+        <ColumnDefinition Width="Auto"/>
+    </Grid.ColumnDefinitions>
+
+    <Button Name="ManageNamesButton"
+            Grid.Column="0"
+            Content="Névsor kezelése"
+            Width="160"
+            Margin="0,0,10,0"/>
+
+    <StackPanel Grid.Column="2"
+                Orientation="Horizontal"
+                HorizontalAlignment="Right">
+        <Button Name="RunButton"
+                Content="Nyomtatás"
+                Style="{StaticResource PrimaryButton}"
+                Width="140"
+                Margin="0,0,10,0"/>
+        <Button Name="CloseButton"
+                Content="Bezárás"
+                Width="110"/>
+    </StackPanel>
+</Grid>
     </Grid>
 </Window>
 "@
@@ -178,6 +200,7 @@ $SelectAllBox = $Window.FindName('SelectAllBox')
 $BrowseButton = $Window.FindName('BrowseButton')
 $PathBox = $Window.FindName('PathBox')
 $CloseButton = $Window.FindName('CloseButton')
+$ManageNamesButton = $Window.FindName('ManageNamesButton')
 
 function Set-AttendanceSheetPath {
     param(
@@ -301,6 +324,26 @@ $Window.Add_Drop({
     $_.Handled = $true
 })
 
+$ManageNamesButton.Add_Click({
+
+    $scriptPath = Join-Path $PSScriptRoot 'editAttendenceSheetNames.ps1'
+
+    if (-not (Test-Path $scriptPath)) {
+        [System.Windows.MessageBox]::Show(
+            "Nem található:`n$scriptPath",
+            "Hiba",
+            "OK",
+            "Error"
+        ) | Out-Null
+        return
+    }
+
+    Start-Process "$env:LOCALAPPDATA\Microsoft\WindowsApps\pwsh.exe" `
+    -ArgumentList "-File `"$PSScriptRoot\editAttendenceSheetNames.ps1`"" `
+    -WindowStyle Hidden
+
+})
+
 $RunButton.Add_Click({
     $selectedTasks = @($Tasks.Keys | Where-Object { $CheckBoxes[$_].IsChecked })
     $requiresSheetPath = @($selectedTasks | Where-Object { $TaskMetadata[$_].RequiresSheetPath })
@@ -324,5 +367,5 @@ $RunButton.Add_Click({
 
 $CloseButton.Add_Click({ $Window.Close() })
 
-$Window.Topmost = $true
+$Window.Topmost = $false
 $Window.ShowDialog() | Out-Null
