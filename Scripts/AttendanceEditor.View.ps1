@@ -46,6 +46,19 @@ function New-TabHeaderBlock {
     return $Block
 }
 
+function New-PlusTabItem {
+    $PlusBlock = New-Object System.Windows.Controls.TextBlock
+    $PlusBlock.Text = "+ Új"
+    $PlusBlock.FontSize = 14
+    $PlusBlock.FontWeight = "SemiBold"
+    $PlusBlock.Foreground = "White"
+
+    $PlusTab = New-Object System.Windows.Controls.TabItem
+    $PlusTab.Header = $PlusBlock
+    $PlusTab.Style = $global:Window.FindResource("PlusTabItem")
+    return $PlusTab
+}
+
 function Set-HeaderDirtyState {
     param (
         [System.Windows.Controls.TextBlock]$HeaderBlock,
@@ -74,7 +87,7 @@ function Initialize-EditorWindow {
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Jelenléti szerkesztő"
-        Width="900" Height="650"
+        Width="1000" Height="650"
         WindowStartupLocation="CenterScreen"
         FontFamily="Segoe UI" FontSize="14"
         Background="$($Theme.BackgroundHex)">
@@ -176,6 +189,23 @@ function Initialize-EditorWindow {
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <Style x:Key="PlusTabItem" TargetType="TabItem">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border Name="Border" Padding="15,10" CornerRadius="4" Margin="0,4,10,4" Background="{StaticResource PrimaryBrush}" Cursor="Hand">
+                            <ContentPresenter x:Name="ContentSite" VerticalAlignment="Center" HorizontalAlignment="Center" ContentSource="Header"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="{StaticResource PrimaryHoverBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <DockPanel>
@@ -184,7 +214,6 @@ function Initialize-EditorWindow {
                 <TextBlock Text="Jelenlétik és Igények" FontSize="20" FontWeight="Bold" Foreground="{StaticResource TextBrush}" VerticalAlignment="Center" DockPanel.Dock="Left"/>
                 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" DockPanel.Dock="Right">
-                    <Button Name="AddDepartmentButton" Content="+ Új részleg" Width="130" Margin="0,0,10,0"/>
                     <Button Name="ReloadButton" Content="Módosítások elvetése" Width="180" Margin="0,0,10,0" Visibility="Collapsed"/>
                     <Button Name="SaveButton" Content="Mentés" Width="120" Style="{StaticResource PrimaryButton}"/>
                 </StackPanel>
@@ -207,13 +236,26 @@ function Initialize-EditorWindow {
 
     $global:SaveButton = $global:Window.FindName("SaveButton")
     $global:ReloadButton = $global:Window.FindName("ReloadButton")
-    $global:AddDepartmentButton = $global:Window.FindName("AddDepartmentButton")
     $global:TabControl = $global:Window.FindName("TabControl")
     $global:Status = $global:Window.FindName("Status")
 
+    $global:AddDepartmentTab = New-PlusTabItem
+    $global:TabControl.Tag = $global:AddDepartmentTab
+    [void]($global:TabControl.Items.Add($global:AddDepartmentTab))
+
+    $global:TabControl.Add_SelectionChanged({
+        param ($Sender, $Event)
+        if ($Sender.SelectedItem -eq $Sender.Tag) {
+            $Previous = if ($Event.RemovedItems.Count -gt 0) { $Event.RemovedItems[0] } else { $null }
+            Add-Department
+            if ($Sender.SelectedItem -eq $Sender.Tag) {
+                $Sender.SelectedItem = $Previous
+            }
+        }
+    })
+
     $global:SaveButton.Add_Click({ Save-All })
     $global:ReloadButton.Add_Click({ Load-All })
-    $global:AddDepartmentButton.Add_Click({ Add-Department })
 
     return $global:Window
 }

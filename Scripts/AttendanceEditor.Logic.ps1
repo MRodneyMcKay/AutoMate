@@ -27,6 +27,22 @@ function Sort-Names {
     }
 }
 
+function Add-TabItemBeforePlusTab {
+    param (
+        [System.Windows.Controls.TabControl]$TabControl,
+        [System.Windows.Controls.TabItem]$NewTab
+    )
+
+    $PlusTab = $TabControl.Tag
+    if ($PlusTab -and $TabControl.Items.Contains($PlusTab)) {
+        $Index = $TabControl.Items.IndexOf($PlusTab)
+        [void]($TabControl.Items.Insert($Index, $NewTab))
+    }
+    else {
+        [void]($TabControl.Items.Add($NewTab))
+    }
+}
+
 function Mark-Dirty {
     param (
         [string]$DeptName,
@@ -355,7 +371,7 @@ function New-PositionTab {
             $global:Status.Text = "Törlési hiba"
         }
     }.GetNewClosure())
-    $ContextMenu.Items.Add($DeleteMenuItem)
+    [void]($ContextMenu.Items.Add($DeleteMenuItem))
     $HeaderBlock.ContextMenu = $ContextMenu
 
     $Grid = New-Object System.Windows.Controls.Grid
@@ -464,17 +480,17 @@ function New-PositionTab {
         }
     }.GetNewClosure())
 
-    $Panel.Children.Add($Box)
-    $Panel.Children.Add($MegseButton)
-    $Panel.Children.Add($AddButton)
-    $Panel.Children.Add($DeleteButton)
+    [void]($Panel.Children.Add($Box))
+    [void]($Panel.Children.Add($MegseButton))
+    [void]($Panel.Children.Add($AddButton))
+    [void]($Panel.Children.Add($DeleteButton))
     [Windows.Controls.Grid]::SetRow($Panel, 1)
 
-    $Grid.Children.Add($List)
-    $Grid.Children.Add($Panel)
+    [void]($Grid.Children.Add($List))
+    [void]($Grid.Children.Add($Panel))
     $Tab.Content = $Grid
 
-    $PositionTabControl.Items.Add($Tab)
+    Add-TabItemBeforePlusTab -TabControl $PositionTabControl -NewTab $Tab
 
     $global:DeptControls[$DeptName].PositionControls[$PosName] = @{
         Tab          = $Tab
@@ -542,7 +558,7 @@ function New-DepartmentTab {
             $global:Status.Text = "Törlési hiba"
         }
     }.GetNewClosure())
-    $ContextMenu.Items.Add($DeleteMenuItem)
+    [void]($ContextMenu.Items.Add($DeleteMenuItem))
     $HeaderBlock.ContextMenu = $ContextMenu
 
     $Container = New-Object System.Windows.Controls.Border
@@ -553,26 +569,27 @@ function New-DepartmentTab {
     $Container.Padding = "15"
     $Container.Margin = "0,10,0,0"
 
-    $DockPanel = New-Object System.Windows.Controls.DockPanel
-
-    $Toolbar = New-Object System.Windows.Controls.StackPanel
-    $Toolbar.Orientation = "Horizontal"
-    $Toolbar.Margin = "0,0,0,15"
-    [Windows.Controls.DockPanel]::SetDock($Toolbar, "Top")
-
-    $AddPositionButton = New-Object System.Windows.Controls.Button
-    $AddPositionButton.Content = "+ Új pozíció"
-    $AddPositionButton.Width = 120
-    $Toolbar.Children.Add($AddPositionButton)
-
     $PositionTabControl = New-Object System.Windows.Controls.TabControl
 
-    $DockPanel.Children.Add($Toolbar)
-    $DockPanel.Children.Add($PositionTabControl)
-    $Container.Child = $DockPanel
+    $AddPositionTab = New-PlusTabItem
+    $PositionTabControl.Tag = $AddPositionTab
+    [void]($PositionTabControl.Items.Add($AddPositionTab))
+
+    $PositionTabControl.Add_SelectionChanged({
+        param ($Sender, $Event)
+        if ($Sender.SelectedItem -eq $Sender.Tag) {
+            $Previous = if ($Event.RemovedItems.Count -gt 0) { $Event.RemovedItems[0] } else { $null }
+            Add-Position
+            if ($Sender.SelectedItem -eq $Sender.Tag) {
+                $Sender.SelectedItem = $Previous
+            }
+        }
+    })
+
+    $Container.Child = $PositionTabControl
     $Tab.Content = $Container
 
-    $global:TabControl.Items.Add($Tab)
+    Add-TabItemBeforePlusTab -TabControl $global:TabControl -NewTab $Tab
 
     $global:DeptControls[$DeptName] = @{
         Tab                = $Tab
@@ -580,8 +597,6 @@ function New-DepartmentTab {
         PositionTabControl = $PositionTabControl
         PositionControls   = @{}
     }
-
-    $AddPositionButton.Add_Click({ Add-Position })
 }
 
 function Add-Department {
@@ -692,6 +707,8 @@ function Load-All {
             New-PositionTab -DeptName $DeptName -PosName $PosName
         }
     }
+
+    [void]($global:TabControl.Items.Add($global:AddDepartmentTab))
 
     Write-Log -Message "XML betöltés kész" -Level "INFO"
     $global:Status.Text = "Betöltve"
