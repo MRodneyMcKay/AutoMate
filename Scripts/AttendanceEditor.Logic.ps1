@@ -191,16 +191,32 @@ function Delete-Position {
         [string]$PosName
     )
 
-    if (-not $global:Data[$DeptName].Positions.Contains($PosName)) { return }
+    if (-not $global:Data.Contains($DeptName)) {
+        Write-Log -Message "Pozíció törlése sikertelen, ismeretlen részleg: $DeptName" -Level "WARNING"
+        return
+    }
+
+    if (-not $global:Data[$DeptName].Positions.Contains($PosName)) {
+        Write-Log -Message "Pozíció törlése sikertelen, ismeretlen pozíció: $DeptName / $PosName" -Level "WARNING"
+        return
+    }
 
     if (-not (Confirm-Deletion -Message "Biztosan törlöd a pozíciót: $PosName?" -Title "Pozíció törlése")) {
         return
     }
 
-    $Tab = $global:DeptControls[$DeptName].PositionControls[$PosName].Tab
-    $global:DeptControls[$DeptName].PositionControls.Remove($PosName)
     $global:Data[$DeptName].Positions.Remove($PosName)
-    $global:DeptControls[$DeptName].PositionTabControl.Items.Remove($Tab)
+
+    if ($global:DeptControls.ContainsKey($DeptName) -and $global:DeptControls[$DeptName].PositionControls.ContainsKey($PosName)) {
+        $Tab = $global:DeptControls[$DeptName].PositionControls[$PosName].Tab
+        $global:DeptControls[$DeptName].PositionControls.Remove($PosName)
+        if ($Tab -and $global:DeptControls[$DeptName].PositionTabControl.Items.Contains($Tab)) {
+            $global:DeptControls[$DeptName].PositionTabControl.Items.Remove($Tab)
+        }
+    }
+    else {
+        Write-Log -Message "Pozíció törölve az adatból, de UI vezérlő nem található: $DeptName / $PosName" -Level "WARNING"
+    }
 
     Write-Log -Message "Pozíció törölve: $DeptName / $PosName" -Level "INFO"
     $global:Status.Text = "Pozíció törölve: $PosName"
@@ -212,16 +228,27 @@ function Delete-Department {
         [string]$DeptName
     )
 
-    if (-not $global:Data.Contains($DeptName)) { return }
+    if (-not $global:Data.Contains($DeptName)) {
+        Write-Log -Message "Részleg törlése sikertelen, ismeretlen részleg: $DeptName" -Level "WARNING"
+        return
+    }
 
     if (-not (Confirm-Deletion -Message "Biztosan törlöd a részleget: $DeptName és minden pozícióját?" -Title "Részleg törlése")) {
         return
     }
 
-    $Tab = $global:DeptControls[$DeptName].Tab
-    $global:DeptControls.Remove($DeptName)
+    if ($global:DeptControls.ContainsKey($DeptName)) {
+        $Tab = $global:DeptControls[$DeptName].Tab
+        $global:DeptControls.Remove($DeptName)
+        if ($Tab -and $global:TabControl.Items.Contains($Tab)) {
+            $global:TabControl.Items.Remove($Tab)
+        }
+    }
+    else {
+        Write-Log -Message "Részleg törölve az adatból, de UI vezérlő nem található: $DeptName" -Level "WARNING"
+    }
+
     $global:Data.Remove($DeptName)
-    $global:TabControl.Items.Remove($Tab)
 
     Write-Log -Message "Részleg törölve: $DeptName" -Level "INFO"
     $global:Status.Text = "Részleg törölve: $DeptName"
@@ -258,7 +285,7 @@ function New-PositionTab {
             Write-Log -Message "Hiba a pozició törlésekor: $($_.Exception.Message)" -Level "ERROR"
             $global:Status.Text = "Törlési hiba"
         }
-    })
+    }.GetNewClosure())
     $ContextMenu.Items.Add($DeleteMenuItem)
     $HeaderBlock.ContextMenu = $ContextMenu
 
@@ -397,7 +424,7 @@ function New-DepartmentTab {
             Write-Log -Message "Hiba a részleg törlésekor: $($_.Exception.Message)" -Level "ERROR"
             $global:Status.Text = "Törlési hiba"
         }
-    })
+    }.GetNewClosure())
     $ContextMenu.Items.Add($DeleteMenuItem)
     $HeaderBlock.ContextMenu = $ContextMenu
 
