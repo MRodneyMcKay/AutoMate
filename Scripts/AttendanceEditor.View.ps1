@@ -185,7 +185,7 @@ function Initialize-EditorWindow {
                 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" DockPanel.Dock="Right">
                     <Button Name="AddDepartmentButton" Content="+ Új részleg" Width="130" Margin="0,0,10,0"/>
-                    <Button Name="ReloadButton" Content="Módosítások elvetése" Width="180" Margin="0,0,10,0"/>
+                    <Button Name="ReloadButton" Content="Módosítások elvetése" Width="180" Margin="0,0,10,0" Visibility="Collapsed"/>
                     <Button Name="SaveButton" Content="Mentés" Width="120" Style="{StaticResource PrimaryButton}"/>
                 </StackPanel>
             </DockPanel>

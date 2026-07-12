@@ -48,6 +48,17 @@ function Mark-Dirty {
             }
         }
     }
+
+    Update-ReloadButtonVisibility
+}
+
+function Update-ReloadButtonVisibility {
+    if ($global:DirtyDepartments.Count -gt 0 -or $global:DirtyPositions.Count -gt 0) {
+        $global:ReloadButton.Visibility = "Visible"
+    }
+    else {
+        $global:ReloadButton.Visibility = "Collapsed"
+    }
 }
 
 function Clear-AllDirty {
@@ -68,6 +79,8 @@ function Clear-AllDirty {
         }
     }
     $global:DirtyPositions.Clear()
+
+    Update-ReloadButtonVisibility
 }
 
 function Get-CurrentDeptAndPosition {
@@ -640,6 +653,7 @@ function Load-All {
     $global:DeptControls.Clear()
     $global:DirtyDepartments.Clear()
     $global:DirtyPositions.Clear()
+    Update-ReloadButtonVisibility
 
     if (-not (Test-Path -Path $global:XmlPath)) {
         Write-Log -Message "Nem található: $global:XmlPath" -Level "ERROR" -ShowMessageBox
