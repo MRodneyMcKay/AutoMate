@@ -20,13 +20,13 @@ Add-Type -AssemblyName PresentationFramework
 Add-Type -AssemblyName System.Xml.Linq
 
 # Path to the attendance XML file
-$Script:AttendanceXmlPath = "C:\Users\Hirossport\Documents\nevek.xml"
+$Script:AttendanceXmlPath = "C:\Users\Hirossport\Hiros Sport Nonprofit Kft\Hiros-sport - Dokumentumok\Furdo\Recepcio\Nyomtatni\Jelenlétik, igények\nevek.xml"
 
 # Function to load XML and get all names from a department, excluding a specific position
 function Get-DepartmentNames {
     param (
         [string]$DepartmentName,
-        [string]$ExcludePosition = "Önkormányzati"
+        [string]$ExcludePosition = "Önkormányzat"
     )
     
     try {
@@ -60,7 +60,7 @@ function Get-DepartmentNames {
 # Function to get only names from a specific position across all departments
 function Get-PositionNames {
     param (
-        [string]$PositionName = "Önkormányzati"
+        [string]$PositionName = "Önkormányzat"
     )
     
     try {
@@ -84,6 +84,40 @@ function Get-PositionNames {
         return @()
     }
 }
+
+function Get-OnkormanyzatAttendanceData {
+    try {
+        [xml]$xml = Get-Content $Script:AttendanceXmlPath
+    }
+    catch {
+        Write-Log -Message "Hiba az XML betöltésekor: $($_.Exception.Message)" -Level "ERROR"
+        return @()
+    }
+
+    $result = @()
+
+    # Minden department, ahol van Önkormányzat pozíció
+    $Departments = $xml.Jelenlet.Department |
+                   Where-Object { $_.Position.Name -contains "Önkormányzat" }
+
+    foreach ($Dept in $Departments) {
+
+        $Facility = $Dept.Facility
+
+        $Names = $Dept.Position |
+                 Where-Object { $_.Name -eq "Önkormányzat" } |
+                 ForEach-Object { $_.Nev }
+
+        $result += [pscustomobject]@{
+            Facility = $Facility
+            Names    = $Names
+        }
+    }
+
+    return $result
+}
+
+
 
 # Function to get facility name from a department
 function Get-DepartmentFacility {
@@ -300,7 +334,11 @@ function Print-AttandanceSheetOnkormanyzat {
     param (
         [string]$OpenFile
     )
-    $Names = Get-PositionNames -PositionName "Önkormányzati"
-    $HeaderText = "Önkormányzat"
-    Invoke-AttendanceSheetPrint -OpenFile $OpenFile -Names $Names -HeaderText $HeaderText
+
+    $OnkormanyzatData = Get-OnkormanyzatAttendanceData
+
+    foreach ($item in $OnkormanyzatData) {
+        Invoke-AttendanceSheetPrint -OpenFile $OpenFile -Names $item.Names -HeaderText $item.Facility
+    }
 }
+

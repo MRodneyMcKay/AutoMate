@@ -55,15 +55,6 @@ $TaskGroups = @(
         )
     },
     @{
-        Header = "Domb Beach"
-        Tasks = @{
-            "Igények - Domb Beach" = {
-                Write-Log "Printing schedule requests for Domb Beach"
-                Print-RequestDombBeach
-            }
-        }
-    },
-    @{
         Header = 'Karbantartók'
         Tasks = @(
             @{ Name = 'Jelenléti ív - Karbantartó'; RequiresSheetPath = $true; Action = { Write-Log 'Printing attendance sheets for the genitors'; Print-AttandanceSheetKarbantarto -OpenFile $script:SelectedSheetPath } }
@@ -206,7 +197,7 @@ foreach ($group in $TaskGroups) {
 
     foreach ($task in $group.Tasks) {
         $cb = New-Object System.Windows.Controls.CheckBox
-        $cb.Content = $task.Name
+        $cb.Content = ($task.Name -split ' - ')[0]
         $cb.ToolTip = if ($task.RequiresSheetPath) { 'Ez a feladat egy kiválasztott jelenléti ív fájlt igényel.' } else { 'Ez a feladat nem igényel jelenléti ív fájlt.' }
         $content.Children.Add($cb)
         $CheckBoxes[$task.Name] = $cb
