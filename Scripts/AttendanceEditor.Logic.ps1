@@ -1,3 +1,20 @@
+<#  
+    This file is part of AutoMate.  
+
+    AutoMate is free software: you can redistribute it and/or modify  
+    it under the terms of the GNU General Public License as published by  
+    the Free Software Foundation, either version 3 of the License, or  
+    (at your option) any later version.  
+
+    This program is distributed in the hope that it will be useful,  
+    but WITHOUT ANY WARRANTY; without even the implied warranty of  
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the  
+    GNU General Public License for more details.  
+
+    You should have received a copy of the GNU General Public License  
+    along with this program. If not, see <https://www.gnu.org/licenses/>.  
+#>
+
 function Sort-Names {
     param (
         [System.Collections.ObjectModel.ObservableCollection[string]]$Collection
@@ -18,7 +35,8 @@ function Mark-Dirty {
 
     if ($global:DirtyDepartments.Add($DeptName)) {
         if ($global:DeptControls.ContainsKey($DeptName)) {
-            Set-HeaderDirtyState -HeaderBlock $global:DeptControls[$DeptName].HeaderBlock -Name $DeptName -IsDirty $true
+            $Facility = $global:Data[$DeptName].Facility
+            Set-HeaderDirtyState -HeaderBlock $global:DeptControls[$DeptName].HeaderBlock -Name $DeptName -Facility $Facility -IsDirty $true
         }
     }
 
@@ -35,7 +53,8 @@ function Mark-Dirty {
 function Clear-AllDirty {
     foreach ($DeptName in $global:DirtyDepartments) {
         if ($global:DeptControls.ContainsKey($DeptName)) {
-            Set-HeaderDirtyState -HeaderBlock $global:DeptControls[$DeptName].HeaderBlock -Name $DeptName -IsDirty $false
+            $Facility = $global:Data[$DeptName].Facility
+            Set-HeaderDirtyState -HeaderBlock $global:DeptControls[$DeptName].HeaderBlock -Name $DeptName -Facility $Facility -IsDirty $false
         }
     }
     $global:DirtyDepartments.Clear()
@@ -76,27 +95,55 @@ function Add-NameToCurrentPosition {
     }
 
     $DeptName = $Context.DeptName
-    $PosName = $Context.PosName
+    $PosName  = $Context.PosName
     $Controls = $global:DeptControls[$DeptName].PositionControls[$PosName]
-    $NewName = $Controls.Box.Text.Trim()
 
-    if ([string]::IsNullOrWhiteSpace($NewName)) { return }
+    $Collection = $global:Data[$DeptName].Positions[$PosName]
 
-    $Collection = $global:Data[$DeptName][$PosName]
+    # Split on tabs and line breaks (Excel clipboard format)
+    $Names = $Controls.Box.Text `
+        -split "(`r`n|`n|`r|`t)" |
+        ForEach-Object { $_.Trim() } |
+        Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
+        Select-Object -Unique
 
-    if ($Collection -contains $NewName) {
-        Write-Log -Message "Duplikált név: $DeptName / $PosName / $NewName" -Level "WARNING"
-        $global:Status.Text = "Duplikált név"
+    if ($Names.Count -eq 0) {
         return
     }
 
-    $Collection.Add($NewName)
-    Sort-Names -Collection $Collection
-    Mark-Dirty -DeptName $DeptName -PosName $PosName
+    $Added = 0
+    $Duplicates = 0
+
+    foreach ($NewName in $Names) {
+
+        if ($Collection -contains $NewName) {
+            $Duplicates++
+            Write-Log -Message "Duplikált név: $DeptName / $PosName / $NewName" -Level "WARNING"
+            continue
+        }
+
+        $Collection.Add($NewName)
+        $Added++
+
+        Write-Log -Message "Név hozzáadva: $DeptName / $PosName / $NewName" -Level "INFO"
+    }
+
+    if ($Added -gt 0) {
+        Sort-Names -Collection $Collection
+        Mark-Dirty -DeptName $DeptName -PosName $PosName
+    }
+
     $Controls.Box.Clear()
 
-    Write-Log -Message "Név hozzáadva: $DeptName / $PosName / $NewName" -Level "INFO"
-    $global:Status.Text = "Név hozzáadva"
+    if ($Added -gt 0 -and $Duplicates -eq 0) {
+        $global:Status.Text = "$Added név hozzáadva"
+    }
+    elseif ($Added -gt 0) {
+        $global:Status.Text = "$Added hozzáadva, $Duplicates duplikált"
+    }
+    else {
+        $global:Status.Text = "Minden név már létezik"
+    }
 }
 
 function Remove-NameFromCurrentPosition {
@@ -112,7 +159,7 @@ function Remove-NameFromCurrentPosition {
     $Selected = $Controls.List.SelectedItem
 
     if ($Selected) {
-        $global:Data[$DeptName][$PosName].Remove($Selected)
+        $global:Data[$DeptName].Positions[$PosName].Remove($Selected)
         Mark-Dirty -DeptName $DeptName -PosName $PosName
         Write-Log -Message "Törölve: $DeptName / $PosName / $Selected" -Level "INFO"
         $global:Status.Text = "Törölve"
@@ -120,6 +167,65 @@ function Remove-NameFromCurrentPosition {
     else {
         $global:Status.Text = "Nincs kiválasztott név"
     }
+}
+
+function Confirm-Deletion {
+    param (
+        [string]$Message,
+        [string]$Title = "Megerősítés"
+    )
+
+    $result = [System.Windows.MessageBox]::Show(
+        $Message,
+        $Title,
+        [System.Windows.MessageBoxButton]::YesNo,
+        [System.Windows.MessageBoxImage]::Question
+    )
+
+    return $result -eq [System.Windows.MessageBoxResult]::Yes
+}
+
+function Delete-Position {
+    param (
+        [string]$DeptName,
+        [string]$PosName
+    )
+
+    if (-not $global:Data[$DeptName].Positions.Contains($PosName)) { return }
+
+    if (-not (Confirm-Deletion -Message "Biztosan törlöd a pozíciót: $PosName?" -Title "Pozíció törlése")) {
+        return
+    }
+
+    $Tab = $global:DeptControls[$DeptName].PositionControls[$PosName].Tab
+    $global:DeptControls[$DeptName].PositionControls.Remove($PosName)
+    $global:Data[$DeptName].Positions.Remove($PosName)
+    $global:DeptControls[$DeptName].PositionTabControl.Items.Remove($Tab)
+
+    Write-Log -Message "Pozíció törölve: $DeptName / $PosName" -Level "INFO"
+    $global:Status.Text = "Pozíció törölve: $PosName"
+    Save-All
+}
+
+function Delete-Department {
+    param (
+        [string]$DeptName
+    )
+
+    if (-not $global:Data.Contains($DeptName)) { return }
+
+    if (-not (Confirm-Deletion -Message "Biztosan törlöd a részleget: $DeptName és minden pozícióját?" -Title "Részleg törlése")) {
+        return
+    }
+
+    $Tab = $global:DeptControls[$DeptName].Tab
+    $global:DeptControls.Remove($DeptName)
+    $global:Data.Remove($DeptName)
+    $global:TabControl.Items.Remove($Tab)
+
+    Write-Log -Message "Részleg törölve: $DeptName" -Level "INFO"
+    $global:Status.Text = "Részleg törölve: $DeptName"
+    Save-All
 }
 
 function New-PositionTab {
@@ -135,6 +241,27 @@ function New-PositionTab {
     $HeaderBlock = New-TabHeaderBlock -Name $PosName
     $Tab.Header = $HeaderBlock
 
+    $ContextMenu = New-Object System.Windows.Controls.ContextMenu
+    $DeleteMenuItem = New-Object System.Windows.Controls.MenuItem
+    $DeleteMenuItem.Header = "Törlés"
+    
+    # Capture values in local variables to avoid closure issues
+    $CapturedDeptName = $DeptName
+    $CapturedPosName = $PosName
+    
+    $DeleteMenuItem.Add_Click({
+        param ($Sender, $Event)
+        try {
+            Delete-Position -DeptName $CapturedDeptName -PosName $CapturedPosName
+        }
+        catch {
+            Write-Log -Message "Hiba a pozició törlésekor: $($_.Exception.Message)" -Level "ERROR"
+            $global:Status.Text = "Törlési hiba"
+        }
+    })
+    $ContextMenu.Items.Add($DeleteMenuItem)
+    $HeaderBlock.ContextMenu = $ContextMenu
+
     $Grid = New-Object System.Windows.Controls.Grid
     $Grid.Margin = "0,10,0,0"
     
@@ -148,15 +275,30 @@ function New-PositionTab {
 
     $List = New-Object System.Windows.Controls.ListBox
     $List.Margin = "0,0,0,15"
-    $List.ItemsSource = $global:Data[$DeptName][$PosName]
+    $List.ItemsSource = $global:Data[$DeptName].Positions[$PosName]
     [Windows.Controls.Grid]::SetRow($List, 0)
 
     $Panel = New-Object System.Windows.Controls.StackPanel
     $Panel.Orientation = "Horizontal"
 
     $Box = New-Object System.Windows.Controls.TextBox
-    $Box.Width = 300
-    $Box.VerticalContentAlignment = "Center"
+$Box.Width = 300
+$Box.AcceptsReturn = $true
+$Box.TextWrapping = "Wrap"
+$Box.VerticalScrollBarVisibility = "Auto"
+$Box.VerticalContentAlignment = "Top"
+$Box.Add_TextChanged({
+    param($sender, $event)
+
+    # Remove trailing CR/LF characters
+    $trimmed = $sender.Text.TrimEnd("`r", "`n")
+
+    if ($trimmed -ne $sender.Text) {
+        $caret = $trimmed.Length
+        $sender.Text = $trimmed
+        $sender.CaretIndex = $caret
+    }
+})
     
     $AddButton = New-Object System.Windows.Controls.Button
     $AddButton.Content = "Hozzáad"
@@ -213,13 +355,13 @@ function Add-Position {
 
     if ([string]::IsNullOrWhiteSpace($PosName)) { return }
 
-    if ($global:Data[$DeptName].Contains($PosName)) {
+    if ($global:Data[$DeptName].Positions.Contains($PosName)) {
         Write-Log -Message "A pozíció már létezik: $DeptName / $PosName" -Level "WARNING"
         $global:Status.Text = "A pozíció már létezik"
         return
     }
 
-    $global:Data[$DeptName][$PosName] = New-Object System.Collections.ObjectModel.ObservableCollection[string]
+    $global:Data[$DeptName].Positions[$PosName] = New-Object System.Collections.ObjectModel.ObservableCollection[string]
     New-PositionTab -DeptName $DeptName -PosName $PosName
     Mark-Dirty -DeptName $DeptName -PosName $PosName
 
@@ -230,13 +372,34 @@ function Add-Position {
 
 function New-DepartmentTab {
     param (
-        [string]$DeptName
+        [string]$DeptName,
+        [string]$Facility = ''
     )
 
     $Tab = New-Object System.Windows.Controls.TabItem
     $Tab.Tag = $DeptName
-    $HeaderBlock = New-TabHeaderBlock -Name $DeptName
+    $HeaderBlock = New-TabHeaderBlock -Name $DeptName -Facility $Facility
     $Tab.Header = $HeaderBlock
+
+    $ContextMenu = New-Object System.Windows.Controls.ContextMenu
+    $DeleteMenuItem = New-Object System.Windows.Controls.MenuItem
+    $DeleteMenuItem.Header = "Törlés"
+    
+    # Capture values in local variables to avoid closure issues
+    $CapturedDeptName = $DeptName
+    
+    $DeleteMenuItem.Add_Click({
+        param ($Sender, $Event)
+        try {
+            Delete-Department -DeptName $CapturedDeptName
+        }
+        catch {
+            Write-Log -Message "Hiba a részleg törlésekor: $($_.Exception.Message)" -Level "ERROR"
+            $global:Status.Text = "Törlési hiba"
+        }
+    })
+    $ContextMenu.Items.Add($DeleteMenuItem)
+    $HeaderBlock.ContextMenu = $ContextMenu
 
     $Container = New-Object System.Windows.Controls.Border
     $Container.Background = $global:Window.FindResource("SurfaceBrush")
@@ -279,8 +442,10 @@ function New-DepartmentTab {
 
 function Add-Department {
     $Name = Show-ModernInputBox -Title "Új részleg" -Prompt "Add meg az új részleg nevét:"
-
     if ([string]::IsNullOrWhiteSpace($Name)) { return }
+
+    $Facility = Show-ModernInputBox -Title "Létesítmény" -Prompt "Add meg a részleg létesítményét:"
+    if ([string]::IsNullOrWhiteSpace($Facility)) { $Facility = '' }
 
     if ($global:Data.Contains($Name)) {
         Write-Log -Message "A részleg már létezik: $Name" -Level "WARNING"
@@ -288,8 +453,11 @@ function Add-Department {
         return
     }
 
-    $global:Data[$Name] = [ordered]@{}
-    New-DepartmentTab -DeptName $Name
+    $global:Data[$Name] = [ordered]@{
+        Facility = $Facility
+        Positions = [ordered]@{}
+    }
+    New-DepartmentTab -DeptName $Name -Facility $Facility
     Mark-Dirty -DeptName $Name
 
     $global:TabControl.SelectedItem = $global:DeptControls[$Name].Tab
@@ -304,12 +472,13 @@ function Save-All {
         foreach ($DeptName in $global:Data.Keys) {
             $DeptElement = [System.Xml.Linq.XElement]::new([System.Xml.Linq.XName]"Department")
             $DeptElement.SetAttributeValue("Name", $DeptName)
+            $DeptElement.SetAttributeValue("Facility", $global:Data[$DeptName].Facility)
 
-            foreach ($PosName in $global:Data[$DeptName].Keys) {
+            foreach ($PosName in $global:Data[$DeptName].Positions.Keys) {
                 $PosElement = [System.Xml.Linq.XElement]::new([System.Xml.Linq.XName]"Position")
                 $PosElement.SetAttributeValue("Name", $PosName)
 
-                $SortedNames = $global:Data[$DeptName][$PosName] | Sort-Object -Culture $global:CultureHU
+                $SortedNames = $global:Data[$DeptName].Positions[$PosName] | Sort-Object -Culture $global:CultureHU
 
                 foreach ($Name in $SortedNames) {
                     $PosElement.Add([System.Xml.Linq.XElement]::new([System.Xml.Linq.XName]"Nev", $Name))
@@ -354,10 +523,15 @@ function Load-All {
 
     foreach ($DeptElement in $XDoc.Root.Elements("Department")) {
         $DeptName = $DeptElement.Attribute("Name").Value
-        Write-Log -Message "Betöltés: $DeptName" -Level "INFO"
-        
-        $global:Data[$DeptName] = [ordered]@{}
-        New-DepartmentTab -DeptName $DeptName
+        $Facility = ''
+        if ($DeptElement.Attribute("Facility")) { $Facility = $DeptElement.Attribute("Facility").Value }
+        Write-Log -Message "Betöltés: $DeptName ($Facility)" -Level "INFO"
+
+        $global:Data[$DeptName] = [ordered]@{
+            Facility = $Facility
+            Positions = [ordered]@{}
+        }
+        New-DepartmentTab -DeptName $DeptName -Facility $Facility
 
         foreach ($PosElement in $DeptElement.Elements("Position")) {
             $PosName = $PosElement.Attribute("Name").Value
@@ -369,7 +543,7 @@ function Load-All {
             }
 
             Sort-Names -Collection $Collection
-            $global:Data[$DeptName][$PosName] = $Collection
+            $global:Data[$DeptName].Positions[$PosName] = $Collection
             New-PositionTab -DeptName $DeptName -PosName $PosName
         }
     }

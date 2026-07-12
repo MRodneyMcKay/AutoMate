@@ -1,14 +1,45 @@
+<#  
+    This file is part of AutoMate.  
+
+    AutoMate is free software: you can redistribute it and/or modify  
+    it under the terms of the GNU General Public License as published by  
+    the Free Software Foundation, either version 3 of the License, or  
+    (at your option) any later version.  
+
+    This program is distributed in the hope that it will be useful,  
+    but WITHOUT ANY WARRANTY; without even the implied warranty of  
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the  
+    GNU General Public License for more details.  
+
+    You should have received a copy of the GNU General Public License  
+    along with this program. If not, see <https://www.gnu.org/licenses/>.  
+#>
+
 $GuiStylingModulePath = Join-Path -Path $PSScriptRoot -ChildPath "..\Modules\GuiStyling\GuiStyling.psd1"
 Import-Module $GuiStylingModulePath -Force
 
+function Get-TabHeaderText {
+    param (
+        [string]$Name,
+        [string]$Facility = ''
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Facility) -or $Facility -eq 'Kecskeméti Fürdő') {
+        return $Name
+    }
+
+    return "$Name - $Facility"
+}
+
 function New-TabHeaderBlock {
     param (
-        [string]$Name
+        [string]$Name,
+        [string]$Facility = ''
     )
 
     $Theme = Get-ThemePalette
     $Block = New-Object System.Windows.Controls.TextBlock
-    $Block.Text = $Name
+    $Block.Text = Get-TabHeaderText -Name $Name -Facility $Facility
     $Block.FontSize = 14
     $Block.FontWeight = "SemiBold"
     $Block.Foreground = $Theme.TextHex
@@ -19,16 +50,18 @@ function Set-HeaderDirtyState {
     param (
         [System.Windows.Controls.TextBlock]$HeaderBlock,
         [string]$Name,
+        [string]$Facility = '',
         [bool]$IsDirty
     )
 
+    $Text = Get-TabHeaderText -Name $Name -Facility $Facility
     if ($IsDirty) {
-        $HeaderBlock.Text = "• $Name"
+        $HeaderBlock.Text = "• $Text"
         $HeaderBlock.FontStyle = "Italic"
         $HeaderBlock.Foreground = "#EA580C"
     }
     else {
-        $HeaderBlock.Text = $Name
+        $HeaderBlock.Text = $Text
         $HeaderBlock.FontStyle = "Normal"
         $Theme = Get-ThemePalette
         $HeaderBlock.Foreground = $Theme.TextHex
