@@ -36,7 +36,7 @@ function Get-ShiftManager {
         $escapedYear +
         '.*' +
         $escapedMonth +
-        '(?!.*(azd|ront|beosztás|havi|Gyógyászat)).*\.xlsx$'
+        '(?!.*(azd|ront|beosztás|havi|Gyógyászat|Aktuális|Domb)).*\.xlsx$'
 
     # Normalize pattern once
     $normalizedPattern = $pattern.Normalize([Text.NormalizationForm]::FormC)
