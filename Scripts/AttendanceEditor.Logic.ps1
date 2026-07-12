@@ -163,10 +163,66 @@ function Remove-NameFromCurrentPosition {
         Mark-Dirty -DeptName $DeptName -PosName $PosName
         Write-Log -Message "Törölve: $DeptName / $PosName / $Selected" -Level "INFO"
         $global:Status.Text = "Törölve"
+        $Controls.Box.Clear()
     }
     else {
         $global:Status.Text = "Nincs kiválasztott név"
     }
+}
+
+function Update-NameInCurrentPosition {
+    $Context = Get-CurrentDeptAndPosition
+    if ($null -eq $Context) {
+        $global:Status.Text = "Nincs kiválasztott pozíció"
+        return
+    }
+
+    $DeptName = $Context.DeptName
+    $PosName  = $Context.PosName
+    $Controls = $global:DeptControls[$DeptName].PositionControls[$PosName]
+
+    $OldName = $Controls.List.SelectedItem
+    if ($null -eq $OldName) {
+        $global:Status.Text = "Nincs kiválasztott név"
+        return
+    }
+
+    $NewName = $Controls.Box.Text.Trim()
+    if ([string]::IsNullOrWhiteSpace($NewName)) {
+        $global:Status.Text = "A név nem lehet üres"
+        return
+    }
+
+    $Collection = $global:Data[$DeptName].Positions[$PosName]
+
+    if ($NewName -eq $OldName) {
+        $Controls.Box.Clear()
+        $Controls.List.SelectedItem = $null
+        $global:Status.Text = "Nincs változás"
+        return
+    }
+
+    if ($Collection -contains $NewName) {
+        Write-Log -Message "Frissítés sikertelen, duplikált név: $DeptName / $PosName / $NewName" -Level "WARNING"
+        $global:Status.Text = "Ez a név már létezik"
+        return
+    }
+
+    $Index = $Collection.IndexOf($OldName)
+    if ($Index -lt 0) {
+        $global:Status.Text = "A név már nem található"
+        return
+    }
+
+    $Collection[$Index] = $NewName
+    Sort-Names -Collection $Collection
+    Mark-Dirty -DeptName $DeptName -PosName $PosName
+
+    Write-Log -Message "Név módosítva: $DeptName / $PosName / $OldName -> $NewName" -Level "INFO"
+    $global:Status.Text = "Név módosítva: $NewName"
+
+    $Controls.Box.Clear()
+    $Controls.List.SelectedItem = $null
 }
 
 function Confirm-Deletion {
@@ -309,24 +365,18 @@ function New-PositionTab {
     $Panel.Orientation = "Horizontal"
 
     $Box = New-Object System.Windows.Controls.TextBox
-$Box.Width = 300
-$Box.AcceptsReturn = $true
-$Box.TextWrapping = "Wrap"
-$Box.VerticalScrollBarVisibility = "Auto"
-$Box.VerticalContentAlignment = "Top"
-$Box.Add_TextChanged({
-    param($sender, $event)
+    $Box.Width = 300
+    $Box.AcceptsReturn = $true
+    $Box.TextWrapping = "Wrap"
+    $Box.VerticalScrollBarVisibility = "Auto"
+    $Box.VerticalContentAlignment = "Top"
 
-    # Remove trailing CR/LF characters
-    $trimmed = $sender.Text.TrimEnd("`r", "`n")
+    $MegseButton = New-Object System.Windows.Controls.Button
+    $MegseButton.Content = "Mégse"
+    $MegseButton.Width = 100
+    $MegseButton.Margin = "10,0,0,0"
+    $MegseButton.Visibility = "Collapsed"
 
-    if ($trimmed -ne $sender.Text) {
-        $caret = $trimmed.Length
-        $sender.Text = $trimmed
-        $sender.CaretIndex = $caret
-    }
-})
-    
     $AddButton = New-Object System.Windows.Controls.Button
     $AddButton.Content = "Hozzáad"
     $AddButton.Width = 100
@@ -337,8 +387,72 @@ $Box.Add_TextChanged({
     $DeleteButton.Content = "Törlés"
     $DeleteButton.Width = 100
     $DeleteButton.Margin = "10,0,0,0"
+    $DeleteButton.Visibility = "Collapsed"
+
+    $Box.Add_TextChanged({
+        param($sender, $event)
+
+        # Remove trailing CR/LF characters
+        $trimmed = $sender.Text.TrimEnd("`r", "`n")
+
+        if ($trimmed -ne $sender.Text) {
+            $caret = $trimmed.Length
+            $sender.Text = $trimmed
+            $sender.CaretIndex = $caret
+        }
+
+        if ([string]::IsNullOrWhiteSpace($sender.Text)) {
+            $MegseButton.Visibility = "Collapsed"
+        }
+        else {
+            $MegseButton.Visibility = "Visible"
+        }
+    }.GetNewClosure())
+
+    $List.Add_SelectionChanged({
+        param ($Sender, $Event)
+        if ($null -ne $List.SelectedItem) {
+            $Box.Text = $List.SelectedItem
+            $AddButton.Content = "Frissítés"
+            $DeleteButton.Visibility = "Visible"
+        }
+        else {
+            $AddButton.Content = "Hozzáad"
+            $DeleteButton.Visibility = "Collapsed"
+        }
+    }.GetNewClosure())
+
+    $AddButton.Add_Click({
+        if ($null -ne $List.SelectedItem) {
+            Update-NameInCurrentPosition
+        }
+        else {
+            Add-NameToCurrentPosition
+        }
+    }.GetNewClosure())
+
+    $DeleteButton.Add_Click({ Remove-NameFromCurrentPosition })
+
+    $MegseButton.Add_Click({
+        $Box.Clear()
+        $List.SelectedItem = $null
+    }.GetNewClosure())
+
+    $Box.Add_KeyDown({
+        param ($Sender, $Event)
+        if ($Event.Key -eq "Enter") {
+            if ($null -ne $List.SelectedItem) {
+                Update-NameInCurrentPosition
+            }
+            else {
+                Add-NameToCurrentPosition
+            }
+            $Event.Handled = $true
+        }
+    }.GetNewClosure())
 
     $Panel.Children.Add($Box)
+    $Panel.Children.Add($MegseButton)
     $Panel.Children.Add($AddButton)
     $Panel.Children.Add($DeleteButton)
     [Windows.Controls.Grid]::SetRow($Panel, 1)
@@ -355,19 +469,9 @@ $Box.Add_TextChanged({
         Box          = $Box
         AddButton    = $AddButton
         DeleteButton = $DeleteButton
+        MegseButton  = $MegseButton
         List         = $List
     }
-
-    $AddButton.Add_Click({ Add-NameToCurrentPosition })
-    $DeleteButton.Add_Click({ Remove-NameFromCurrentPosition })
-
-    $Box.Add_KeyDown({
-        param ($Sender, $Event)
-        if ($Event.Key -eq "Enter") {
-            Add-NameToCurrentPosition
-            $Event.Handled = $true
-        }
-    })
 }
 
 function Add-Position {
