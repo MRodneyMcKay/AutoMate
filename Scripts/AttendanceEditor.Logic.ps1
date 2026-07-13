@@ -183,20 +183,28 @@ function Remove-NameFromCurrentPosition {
     }
 
     $DeptName = $Context.DeptName
-    $PosName = $Context.PosName
+    $PosName  = $Context.PosName
     $Controls = $global:DeptControls[$DeptName].PositionControls[$PosName]
-    $Selected = $Controls.List.SelectedItem
 
-    if ($Selected) {
-        $global:Data[$DeptName].Positions[$PosName].Remove($Selected)
-        Mark-Dirty -DeptName $DeptName -PosName $PosName
-        Write-Log -Message "Törölve: $DeptName / $PosName / $Selected" -Level "INFO"
-        $global:Status.Text = "Törölve"
-        $Controls.Box.Clear()
-    }
-    else {
+    if ($Controls.List.SelectedItems.Count -eq 0) {
         $global:Status.Text = "Nincs kiválasztott név"
+        return
     }
+
+    # Copy because SelectedItems changes while removing
+    $Names = @($Controls.List.SelectedItems)
+
+    foreach ($Name in $Names) {
+        $global:Data[$DeptName].Positions[$PosName].Remove($Name)
+        Write-Log -Message "Törölve: $DeptName / $PosName / $Name" -Level "INFO"
+    }
+
+    Mark-Dirty -DeptName $DeptName -PosName $PosName
+
+    $Controls.Box.Clear()
+    $Controls.List.UnselectAll()
+
+    $global:Status.Text = "$($Names.Count) név törölve"
 }
 
 function Update-NameInCurrentPosition {
@@ -249,6 +257,18 @@ function Update-NameInCurrentPosition {
 
     Write-Log -Message "Név módosítva: $DeptName / $PosName / $OldName -> $NewName" -Level "INFO"
     $global:Status.Text = "Név módosítva: $NewName"
+
+    $Controls.Box.Clear()
+    $Controls.List.SelectedItem = $null
+}
+
+function Cancel-NameEdit {
+    $Context = Get-CurrentDeptAndPosition
+    if ($null -eq $Context) {
+        return
+    }
+
+    $Controls = $global:DeptControls[$Context.DeptName].PositionControls[$Context.PosName]
 
     $Controls.Box.Clear()
     $Controls.List.SelectedItem = $null
@@ -340,6 +360,86 @@ function Delete-Department {
     Save-All
 }
 
+function Get-ListBoxItemAtPoint {
+    param (
+        [System.Windows.Controls.ListBox]$ListBox,
+        [System.Windows.Point]$Point
+    )
+
+    $Element = $ListBox.InputHitTest($Point)
+    while ($Element -and -not ($Element -is [System.Windows.Controls.ListBoxItem])) {
+        $Element = [System.Windows.Media.VisualTreeHelper]::GetParent($Element)
+    }
+    return $Element
+}
+
+function Enable-ListBoxDragSelection {
+    param (
+        [System.Windows.Controls.ListBox]$ListBox
+    )
+
+    # Per-list drag state, captured by closure below so each ListBox gets its own instance.
+    $DragState = @{
+        IsDragging  = $false
+        AnchorIndex = -1
+        LastStart   = -1
+        LastEnd     = -1
+    }
+
+    $ListBox.Add_PreviewMouseLeftButtonDown({
+        param ($Sender, $Event)
+
+        # Plain click/drag only; Ctrl-click and Shift-click keep their normal WPF behaviour.
+        if ([System.Windows.Input.Keyboard]::Modifiers -ne [System.Windows.Input.ModifierKeys]::None) { return }
+
+        $Item = Get-ListBoxItemAtPoint -ListBox $Sender -Point $Event.GetPosition($Sender)
+        if ($null -eq $Item) { return }
+
+        $Index = $Sender.ItemContainerGenerator.IndexFromContainer($Item)
+        if ($Index -lt 0) { return }
+
+        $DragState.IsDragging  = $true
+        $DragState.AnchorIndex = $Index
+        $DragState.LastStart   = $Index
+        $DragState.LastEnd     = $Index
+    }.GetNewClosure())
+
+    $ListBox.Add_PreviewMouseMove({
+        param ($Sender, $Event)
+
+        if (-not $DragState.IsDragging) { return }
+        if ($Event.LeftButton -ne [System.Windows.Input.MouseButtonState]::Pressed) {
+            $DragState.IsDragging = $false
+            return
+        }
+
+        $Item = Get-ListBoxItemAtPoint -ListBox $Sender -Point $Event.GetPosition($Sender)
+        if ($null -eq $Item) { return }
+
+        $Index = $Sender.ItemContainerGenerator.IndexFromContainer($Item)
+        if ($Index -lt 0) { return }
+
+        $Start = [Math]::Min($DragState.AnchorIndex, $Index)
+        $End   = [Math]::Max($DragState.AnchorIndex, $Index)
+
+        # Skip if the range hasn't changed since the last move, to avoid redundant SelectionChanged events.
+        if ($Start -eq $DragState.LastStart -and $End -eq $DragState.LastEnd) { return }
+
+        $DragState.LastStart = $Start
+        $DragState.LastEnd   = $End
+
+        $Sender.SelectedItems.Clear()
+        for ($i = $Start; $i -le $End; $i++) {
+            [void]($Sender.SelectedItems.Add($Sender.Items[$i]))
+        }
+    }.GetNewClosure())
+
+    $ListBox.Add_PreviewMouseLeftButtonUp({
+        param ($Sender, $Event)
+        $DragState.IsDragging = $false
+    }.GetNewClosure())
+}
+
 function New-PositionTab {
     param (
         [string]$DeptName,
@@ -386,9 +486,11 @@ function New-PositionTab {
     $Grid.RowDefinitions.Add($InputRow)
 
     $List = New-Object System.Windows.Controls.ListBox
+    $List.SelectionMode = "Extended"
     $List.Margin = "0,0,0,15"
     $List.ItemsSource = $global:Data[$DeptName].Positions[$PosName]
     [Windows.Controls.Grid]::SetRow($List, 0)
+    Enable-ListBoxDragSelection -ListBox $List
 
     $Panel = New-Object System.Windows.Controls.StackPanel
     $Panel.Orientation = "Horizontal"
@@ -414,6 +516,7 @@ function New-PositionTab {
 
     $DeleteButton = New-Object System.Windows.Controls.Button
     $DeleteButton.Content = "Törlés"
+    $DeleteButton.Height = 30
     $DeleteButton.Width = 100
     $DeleteButton.Margin = "10,0,0,0"
     $DeleteButton.Visibility = "Collapsed"
@@ -440,14 +543,38 @@ function New-PositionTab {
 
     $List.Add_SelectionChanged({
         param ($Sender, $Event)
-        if ($null -ne $List.SelectedItem) {
-            $Box.Text = $List.SelectedItem
-            $AddButton.Content = "Frissítés"
-            $DeleteButton.Visibility = "Visible"
-        }
-        else {
-            $AddButton.Content = "Hozzáad"
-            $DeleteButton.Visibility = "Collapsed"
+
+        switch ($List.SelectedItems.Count) {
+
+            0 {
+                $Box.Clear()
+
+                $Box.Visibility = "Visible"
+                $AddButton.Visibility = "Visible"
+                $MegseButton.Visibility = "Collapsed"
+                $DeleteButton.Visibility = "Collapsed"
+
+                $AddButton.Content = "Hozzáad"
+            }
+
+            1 {
+                $Box.Visibility = "Visible"
+                $AddButton.Visibility = "Visible"
+
+                $Box.Text = $List.SelectedItem
+                $AddButton.Content = "Frissítés"
+                $DeleteButton.Visibility = "Visible"
+            }
+
+            default {
+                $Box.Clear()
+
+                $Box.Visibility = "Collapsed"
+                $AddButton.Visibility = "Collapsed"
+                $MegseButton.Visibility = "Collapsed"
+
+                $DeleteButton.Visibility = "Visible"
+            }
         }
     }.GetNewClosure())
 
@@ -462,10 +589,7 @@ function New-PositionTab {
 
     $DeleteButton.Add_Click({ Remove-NameFromCurrentPosition })
 
-    $MegseButton.Add_Click({
-        $Box.Clear()
-        $List.SelectedItem = $null
-    }.GetNewClosure())
+    $MegseButton.Add_Click({ Cancel-NameEdit })
 
     $Box.Add_KeyDown({
         param ($Sender, $Event)
