@@ -14,3 +14,4 @@
 !.gitignore
 !.gitattributes
 .vscode/settings.json
+.vscode/launch.json
