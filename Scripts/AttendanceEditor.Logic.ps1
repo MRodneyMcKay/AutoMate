@@ -183,20 +183,28 @@ function Remove-NameFromCurrentPosition {
     }
 
     $DeptName = $Context.DeptName
-    $PosName = $Context.PosName
+    $PosName  = $Context.PosName
     $Controls = $global:DeptControls[$DeptName].PositionControls[$PosName]
-    $Selected = $Controls.List.SelectedItem
 
-    if ($Selected) {
-        $global:Data[$DeptName].Positions[$PosName].Remove($Selected)
-        Mark-Dirty -DeptName $DeptName -PosName $PosName
-        Write-Log -Message "Törölve: $DeptName / $PosName / $Selected" -Level "INFO"
-        $global:Status.Text = "Törölve"
-        $Controls.Box.Clear()
-    }
-    else {
+    if ($Controls.List.SelectedItems.Count -eq 0) {
         $global:Status.Text = "Nincs kiválasztott név"
+        return
     }
+
+    # Copy because SelectedItems changes while removing
+    $Names = @($Controls.List.SelectedItems)
+
+    foreach ($Name in $Names) {
+        $global:Data[$DeptName].Positions[$PosName].Remove($Name)
+        Write-Log -Message "Törölve: $DeptName / $PosName / $Name" -Level "INFO"
+    }
+
+    Mark-Dirty -DeptName $DeptName -PosName $PosName
+
+    $Controls.Box.Clear()
+    $Controls.List.UnselectAll()
+
+    $global:Status.Text = "$($Names.Count) név törölve"
 }
 
 function Update-NameInCurrentPosition {
@@ -386,6 +394,7 @@ function New-PositionTab {
     $Grid.RowDefinitions.Add($InputRow)
 
     $List = New-Object System.Windows.Controls.ListBox
+    $List.SelectionMode = "Extended"
     $List.Margin = "0,0,0,15"
     $List.ItemsSource = $global:Data[$DeptName].Positions[$PosName]
     [Windows.Controls.Grid]::SetRow($List, 0)
@@ -414,6 +423,7 @@ function New-PositionTab {
 
     $DeleteButton = New-Object System.Windows.Controls.Button
     $DeleteButton.Content = "Törlés"
+    $DeleteButton.Height = 30
     $DeleteButton.Width = 100
     $DeleteButton.Margin = "10,0,0,0"
     $DeleteButton.Visibility = "Collapsed"
@@ -440,14 +450,38 @@ function New-PositionTab {
 
     $List.Add_SelectionChanged({
         param ($Sender, $Event)
-        if ($null -ne $List.SelectedItem) {
-            $Box.Text = $List.SelectedItem
-            $AddButton.Content = "Frissítés"
-            $DeleteButton.Visibility = "Visible"
-        }
-        else {
-            $AddButton.Content = "Hozzáad"
-            $DeleteButton.Visibility = "Collapsed"
+
+        switch ($List.SelectedItems.Count) {
+
+            0 {
+                $Box.Clear()
+
+                $Box.Visibility = "Visible"
+                $AddButton.Visibility = "Visible"
+                $MegseButton.Visibility = "Collapsed"
+                $DeleteButton.Visibility = "Collapsed"
+
+                $AddButton.Content = "Hozzáad"
+            }
+
+            1 {
+                $Box.Visibility = "Visible"
+                $AddButton.Visibility = "Visible"
+
+                $Box.Text = $List.SelectedItem
+                $AddButton.Content = "Frissítés"
+                $DeleteButton.Visibility = "Visible"
+            }
+
+            default {
+                $Box.Clear()
+
+                $Box.Visibility = "Collapsed"
+                $AddButton.Visibility = "Collapsed"
+                $MegseButton.Visibility = "Collapsed"
+
+                $DeleteButton.Visibility = "Visible"
+            }
         }
     }.GetNewClosure())
 
