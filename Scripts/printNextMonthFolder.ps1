@@ -19,6 +19,7 @@ Add-Type -AssemblyName PresentationFramework
 Add-Type -AssemblyName PresentationCore
 Add-Type -AssemblyName WindowsBase
 Add-Type -AssemblyName System.Xaml
+Add-Type -AssemblyName System.IO.Compression.FileSystem
 
 # Load modules and get file path
 $ModulePath = Join-Path -Path $PSScriptRoot -ChildPath "..\Modules\"
@@ -213,10 +214,58 @@ function Set-AttendanceSheetPath {
 
     $extension = [System.IO.Path]::GetExtension($Path).ToLowerInvariant()
 
-    if ($extension -notin '.xls', '.xlsx', '.xlsm') {
+    if ($extension -ne '.xlsx') {
         [System.Windows.MessageBox]::Show(
-            'Csak Excel fájl (*.xls, *.xlsx, *.xlsm) választható ki.',
+            'Csak Excel fájl (*.xlsx) választható ki.',
             'Érvénytelen fájl',
+            'OK',
+            'Warning'
+        ) | Out-Null
+
+        return
+    }
+
+    try {
+
+        $zip = [System.IO.Compression.ZipFile]::OpenRead($Path)
+
+        try {
+            $entry = $zip.GetEntry('xl/workbook.xml')
+
+            if (-not $entry) {
+                throw "Missing workbook.xml"
+            }
+
+            $reader = New-Object System.IO.StreamReader($entry.Open())
+
+            try {
+                $xml = [xml]$reader.ReadToEnd()
+            }
+            finally {
+                $reader.Dispose()
+            }
+
+            $hasFizikai = $xml.workbook.sheets.sheet.name -contains 'Fizikai'
+        }
+        finally {
+            $zip.Dispose()
+        }
+
+        if (-not $hasFizikai) {
+            [System.Windows.MessageBox]::Show(
+                'A kiválasztott munkafüzet nem megfelelő.',
+                'Rossz fájl',
+                'OK',
+                'Warning'
+            ) | Out-Null
+
+            return
+        }
+    }
+    catch {
+        [System.Windows.MessageBox]::Show(
+            'A kiválasztott munkafüzet nem megfelelő.',
+            'Rossz fájl',
             'OK',
             'Warning'
         ) | Out-Null
