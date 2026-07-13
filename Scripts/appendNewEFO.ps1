@@ -15,10 +15,10 @@
     along with this program. If not, see <https://www.gnu.org/licenses/>.  
 #>
 
-# Import your logging system
 $ModulePath = Join-Path -Path $PSScriptRoot -ChildPath "..\Modules\"
 $resolvedModulegPath = (Resolve-Path -Path $ModulePath).Path
 Import-Module (Join-Path -Path $resolvedModulegPath -ChildPath 'LoggingSystem\LoggingSystem.psd1')
+Import-Module (Join-Path -Path $resolvedModulegPath -ChildPath 'GuiStyling\GuiStyling.psd1') -Force
 
 # Environment variable
 $EnvVarName = "EfoNévsor"
@@ -43,88 +43,82 @@ function Write-EfoNames {
     }
 }
 
-# ObservableCollection
-$Names = New-Object System.Collections.ObjectModel.ObservableCollection[System.String]
+# ObservableCollection backing the list
+$Names = New-Object System.Collections.ObjectModel.ObservableCollection[string]
 foreach ($n in (Read-EfoNames)) { $Names.Add($n) }
 
-# Cancel flag
-$CancelClicked = $false
+function Sort-EfoNames {
+    $Sorted = $Names | Sort-Object -Culture $cultureHU
+    $Names.Clear()
+    foreach ($n in $Sorted) { $Names.Add($n) }
+}
 
-# XAML
+# --- DIRTY STATE TRACKING ---
+$global:IsDirty = $false
+
+function Update-DirtyUI {
+    if ($global:IsDirty) {
+        $ReloadButton.Visibility = "Visible"
+        $Status.Text = "Vannak mentetlen módosítások"
+    }
+    else {
+        $ReloadButton.Visibility = "Collapsed"
+        $Status.Text = "Készen áll"
+    }
+}
+
+# Theme + XAML
+$Theme = Get-ThemePalette
 $xaml = @"
-<Window xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
-        Title='EFO Névsor' Height='350' Width='600'
-        WindowStartupLocation='CenterScreen'>
-    <DockPanel Margin='10'>
-        <StatusBar DockPanel.Dock='Bottom'>
-            <TextBlock Name='StatusBar' Text='Készen áll' />
-        </StatusBar>
-        <Grid>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width='2*'/>
-                <ColumnDefinition Width='Auto'/>
-                <ColumnDefinition Width='3*'/>
-            </Grid.ColumnDefinitions>
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="EFO Névsor"
+        Width="620" Height="550"
+        WindowStartupLocation="CenterScreen"
+        FontFamily="Segoe UI" FontSize="14"
+        Background="$($Theme.BackgroundHex)">
 
-            <!-- Left: Input -->
-            <Grid Grid.Column='0'>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height='*'/>
-                    <RowDefinition Height='Auto'/>
-                    <RowDefinition Height='*'/>
-                </Grid.RowDefinitions>
-                <TextBox Grid.Row='1'
-                         Name='NameBox'
-                         Width='180'
-                         Height='28'
-                         VerticalContentAlignment='Center'
-                         Tag='Név'
-                         Foreground='Gray'/>
-            </Grid>
+    <Window.Resources>
+        $(Get-WpfSharedStylesXaml -IncludeButtonStyles -IncludeTextBoxStyles -IncludeListBoxStyles)
+    </Window.Resources>
 
-            <!-- Middle: Add, Trash, Cancel -->
-            <Grid Grid.Column='1' Name='MiddleGrid' Margin='15,0'>
+    <DockPanel>
+        <Border DockPanel.Dock="Top" Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1" Padding="20,15">
+            <DockPanel>
+                <TextBlock Text="EFO Névsor" FontSize="20" FontWeight="Bold" Foreground="{StaticResource TextBrush}" VerticalAlignment="Center" DockPanel.Dock="Left"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" DockPanel.Dock="Right">
+                    <Button Name="ReloadButton" Content="Módosítások elvetése" Width="180" Margin="0,0,10,0" Visibility="Collapsed"/>
+                    <Button Name="SaveButton" Content="Mentés" Width="120" Style="{StaticResource PrimaryButton}"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <Border DockPanel.Dock="Bottom" Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0" Padding="20,5">
+            <TextBlock Name="Status" Text="Készen áll" FontSize="12" Foreground="{StaticResource MutedBrush}"/>
+        </Border>
+
+        <Border Padding="20">
+            <Grid>
                 <Grid.RowDefinitions>
-                    <RowDefinition Height='*'/>
-                    <RowDefinition Height='Auto'/>
-                    <RowDefinition Height='Auto'/>
-                    <RowDefinition Height='Auto'/>
-                    <RowDefinition Height='*'/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <!-- Add Arrow -->
-                <Button Grid.Row='1'
-                        Name='AddButton'
-                        Width='40'
-                        Height='40'
-                        FontFamily='Segoe MDL2 Assets'
-                        FontSize='20'
-                        Content='&#xE72A;' />
+                <ListBox Name="NameList" Grid.Row="0" Margin="0,0,0,15"/>
 
-                <!-- Trash -->
-                <Button Grid.Row='2'
-                        Name='TrashButton'
-                        Width='40'
-                        Height='40'
-                        Margin='0,10,0,0'
-                        FontFamily='Segoe MDL2 Assets'
-                        FontSize='20'
-                        Content='&#xE74D;' />
-
-                <!-- Mégse -->
-                <Button Grid.Row='3'
-                        Name='CancelButton'
-                        Width='60'
-                        Height='30'
-                        Margin='0,10,0,0'
-                        Content='Mégse' />
+                <StackPanel Grid.Row="1" Orientation="Horizontal">
+                    <TextBox Name="NameBox"
+                             Width="260"
+                             AcceptsReturn="True"
+                             TextWrapping="Wrap"
+                             VerticalScrollBarVisibility="Auto"
+                             VerticalContentAlignment="Top"/>
+                    <Button Name="CancelButton" Content="Mégse" Width="90" Margin="10,0,0,0" Visibility="Collapsed"/>
+                    <Button Name="AddButton" Content="Hozzáad" Width="100" Margin="10,0,0,0" Style="{StaticResource PrimaryButton}"/>
+                    <Button Name="DeleteButton" Content="Törlés" Width="90" Margin="10,0,0,0" Visibility="Collapsed"/>
+                </StackPanel>
             </Grid>
-
-            <!-- Right: List of names -->
-            <Grid Grid.Column='2'>
-                <ListBox Name='NameList' />
-            </Grid>
-        </Grid>
+        </Border>
     </DockPanel>
 </Window>
 "@
@@ -134,72 +128,197 @@ $reader = New-Object System.Xml.XmlNodeReader ([xml]$xaml)
 $window = [Windows.Markup.XamlReader]::Load($reader)
 
 # UI references
-$NameList    = $window.FindName("NameList")
-$NameBox     = $window.FindName("NameBox")
-$AddButton   = $window.FindName("AddButton")
-$TrashButton = $window.FindName("TrashButton")
-$CancelButton= $window.FindName("CancelButton")
-$StatusBar   = $window.FindName("StatusBar")
+$NameList     = $window.FindName("NameList")
+$NameBox      = $window.FindName("NameBox")
+$AddButton    = $window.FindName("AddButton")
+$DeleteButton = $window.FindName("DeleteButton")
+$CancelButton = $window.FindName("CancelButton")
+$SaveButton   = $window.FindName("SaveButton")
+$ReloadButton = $window.FindName("ReloadButton")
+$Status       = $window.FindName("Status")
 
-# Bind list
 $NameList.ItemsSource = $Names
 
-# Placeholder logic
-$NameBox.Text = $NameBox.Tag
-$NameBox.Foreground = "Gray"
-$NameBox.Add_GotFocus({ if ($NameBox.Text -eq $NameBox.Tag) { $NameBox.Text = ""; $NameBox.Foreground="Black" } })
-$NameBox.Add_LostFocus({ if ([string]::IsNullOrWhiteSpace($NameBox.Text)) { $NameBox.Text=$NameBox.Tag; $NameBox.Foreground="Gray" } })
+# Add a brand-new name
+function Add-EfoName {
+    $NewName = $NameBox.Text.Trim()
+    if ([string]::IsNullOrWhiteSpace($NewName)) { return }
 
-# Add name
-function Add-Name {
-    $newName = $NameBox.Text.Trim()
-    if (-not $newName -or $newName -eq $NameBox.Tag) { return }
-    if ($Names | Where-Object { $_.Equals($newName,'InvariantCultureIgnoreCase') }) {
-        Write-Log -Message "'$newName' már szerepel a névsorban" -Level WARNING -ShowMessageBox
-        $StatusBar.Text = "Duplikált név"; return
+    if ($Names | Where-Object { $_.Equals($NewName, 'InvariantCultureIgnoreCase') }) {
+        Write-Log -Message "Duplikált név: $NewName" -Level "WARNING"
+        $Status.Text = "Duplikált név"
+        return
     }
-    $Names.Add($newName)
-    # Re-sort
-    $sorted = $Names | Sort-Object -Culture $cultureHU
-    $Names.Clear()
-    foreach ($n in $sorted) { $Names.Add($n) }
-    $StatusBar.Text = "Név hozzáadva"
-    $NameBox.Text = $NameBox.Tag
-    $NameBox.Foreground = "Gray"
+
+    $Names.Add($NewName)
+    Sort-EfoNames
+
+    $global:IsDirty = $true
+    Update-DirtyUI
+
+    Write-Log -Message "Név hozzáadva: $NewName" -Level "INFO"
+    $Status.Text = "Név hozzáadva: $NewName"
+    $NameBox.Clear()
 }
 
-$AddButton.Add_Click({ Add-Name })
-$NameBox.Add_KeyDown({ param($s,$e); if ($e.Key -eq 'Enter') { Add-Name; $e.Handled=$true } })
+# Rename the currently selected name
+function Update-EfoName {
+    $OldName = $NameList.SelectedItem
+    if ($null -eq $OldName) {
+        $Status.Text = "Nincs kiválasztott név"
+        return
+    }
 
-# Trash button
-$TrashButton.Add_Click({
-    $selected = $NameList.SelectedItem
-    if ($null -ne $selected) {
-        $StatusBar.Text = "Név törlése..."
-        $Names.Remove($selected)
-        $StatusBar.Text = "Név törölve"
-    } else { $StatusBar.Text = "Nincs kiválasztott név" }
+    $NewName = $NameBox.Text.Trim()
+    if ([string]::IsNullOrWhiteSpace($NewName)) {
+        $Status.Text = "A név nem lehet üres"
+        return
+    }
+
+    if ($NewName -eq $OldName) {
+        $NameBox.Clear()
+        $NameList.SelectedItem = $null
+        $Status.Text = "Nincs változás"
+        return
+    }
+
+    if ($Names | Where-Object { $_.Equals($NewName, 'InvariantCultureIgnoreCase') }) {
+        Write-Log -Message "Frissítés sikertelen, duplikált név: $NewName" -Level "WARNING"
+        $Status.Text = "Ez a név már létezik"
+        return
+    }
+
+    $Index = $Names.IndexOf($OldName)
+    if ($Index -lt 0) {
+        $Status.Text = "A név már nem található"
+        return
+    }
+
+    $Names[$Index] = $NewName
+    Sort-EfoNames
+
+    $global:IsDirty = $true
+    Update-DirtyUI
+
+    Write-Log -Message "Név módosítva: $OldName -> $NewName" -Level "INFO"
+    $Status.Text = "Név módosítva: $NewName"
+
+    $NameBox.Clear()
+    $NameList.SelectedItem = $null
+}
+
+# Remove the currently selected name
+function Remove-EfoName {
+    $Selected = $NameList.SelectedItem
+    if ($null -ne $Selected) {
+        $Names.Remove($Selected)
+
+        $global:IsDirty = $true
+        Update-DirtyUI
+
+        Write-Log -Message "Név törölve: $Selected" -Level "INFO"
+        $Status.Text = "Név törölve"
+        $NameBox.Clear()
+    }
+    else {
+        $Status.Text = "Nincs kiválasztott név"
+    }
+}
+
+# Selecting a name in the list switches the row into edit mode
+$NameList.Add_SelectionChanged({
+    param($Sender, $Event)
+    if ($null -ne $NameList.SelectedItem) {
+        $NameBox.Text = $NameList.SelectedItem
+        $AddButton.Content = "Frissítés"
+        $DeleteButton.Visibility = "Visible"
+    }
+    else {
+        $AddButton.Content = "Hozzáad"
+        $DeleteButton.Visibility = "Collapsed"
+    }
 })
 
-# Cancel button
+# Text box housekeeping: strip stray line breaks, show/hide Mégse
+$NameBox.Add_TextChanged({
+    param($sender, $event)
+
+    $trimmed = $sender.Text.TrimEnd("`r", "`n")
+    if ($trimmed -ne $sender.Text) {
+        $caret = $trimmed.Length
+        $sender.Text = $trimmed
+        $sender.CaretIndex = $caret
+    }
+
+    if ([string]::IsNullOrWhiteSpace($sender.Text)) {
+        $CancelButton.Visibility = "Collapsed"
+    }
+    else {
+        $CancelButton.Visibility = "Visible"
+    }
+})
+
+$AddButton.Add_Click({
+    if ($null -ne $NameList.SelectedItem) {
+        Update-EfoName
+    }
+    else {
+        Add-EfoName
+    }
+})
+
+$DeleteButton.Add_Click({ Remove-EfoName })
+
 $CancelButton.Add_Click({
-    $CancelClicked = $true
-    $window.Close()
+    $NameBox.Clear()
+    $NameList.SelectedItem = $null
 })
 
-# Save on closing (if not canceled)
-$window.Add_Closing({
-    if (-not $CancelClicked) {
-        $StatusBar.Text = "Mentés..."
-        [System.Windows.Threading.Dispatcher]::CurrentDispatcher.Invoke([action]{}, [System.Windows.Threading.DispatcherPriority]::Render)
-        try {
-            if (-not (Write-EfoNames -Names $Names)) {
-                Write-Log -Message "Hiba a névsor mentése közben ablak bezáráskor" -Level ERROR -ShowMessageBox
-            } else { $StatusBar.Text = "Mentés kész" }
-        } catch {
-            Write-Log -Message "Hiba a névsor mentése közben ablak bezáráskor" -Level ERROR -ShowMessageBox
+$NameBox.Add_KeyDown({
+    param($Sender, $Event)
+    if ($Event.Key -eq "Enter") {
+        if ($null -ne $NameList.SelectedItem) {
+            Update-EfoName
+        }
+        else {
+            Add-EfoName
+        }
+        $Event.Handled = $true
+    }
+})
+
+# Explicit save / discard
+$SaveButton.Add_Click({
+    try {
+        if (Write-EfoNames -Names $Names) {
+            Write-Log -Message "EFO névsor mentve" -Level "INFO"
+            $Status.Text = "Mentés kész"
+
+            $global:IsDirty = $false
+            Update-DirtyUI
+        }
+        else {
+            Write-Log -Message "Hiba a névsor mentése közben" -Level "ERROR" -ShowMessageBox
+            $Status.Text = "Mentés sikertelen"
         }
     }
+    catch {
+        Write-Log -Message "Hiba a névsor mentése közben: $($_.Exception.Message)" -Level "ERROR" -ShowMessageBox
+        $Status.Text = "Mentés sikertelen"
+    }
+})
+
+$ReloadButton.Add_Click({
+    $Names.Clear()
+    foreach ($n in (Read-EfoNames)) { $Names.Add($n) }
+    $NameBox.Clear()
+    $NameList.SelectedItem = $null
+
+    $global:IsDirty = $false
+    Update-DirtyUI
+
+    Write-Log -Message "EFO névsor újratöltve" -Level "INFO"
+    $Status.Text = "Módosítások elvetve"
 })
 
 # Show window

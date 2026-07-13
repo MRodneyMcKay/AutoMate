@@ -19,6 +19,7 @@ Add-Type -AssemblyName PresentationFramework
 Add-Type -AssemblyName PresentationCore
 Add-Type -AssemblyName WindowsBase
 Add-Type -AssemblyName System.Xaml
+Add-Type -AssemblyName System.IO.Compression.FileSystem
 
 # Load modules and get file path
 $ModulePath = Join-Path -Path $PSScriptRoot -ChildPath "..\Modules\"
@@ -26,138 +27,292 @@ $resolvedModulePath = (Resolve-Path -Path $ModulePath).Path
 
 Import-Module (Join-Path -Path $resolvedModulePath -ChildPath 'LoggingSystem\LoggingSystem.psd1')
 Import-Module (Join-Path -Path $resolvedModulePath -ChildPath 'PrintNextMonthFolder\PrintNextMonthFolder.psd1')
+Import-Module (Join-Path -Path $resolvedModulePath -ChildPath 'GuiStyling\GuiStyling.psd1')
 
-$path = Get-SheetPath
+Add-Type -AssemblyName System.Windows.Forms
 
-# Define task groups
+$script:SelectedSheetPath = $null
+
 $TaskGroups = @(
     @{
-        Header = "Front Office"
-        Tasks = @{
-            "Igények - Front Office" = {
-                Write-Log "Printing schedule requests for the front office"
-                Print-RequestFrontOffice
-            }
-            "Jelenléti ív - Front Office" = {
-                Write-Log "Printing attendance sheets for the front office"
-                Print-AttandanceSheetFrontOffice -OpenFile $path
-            }
-        }
+        Header = 'Front Office'
+        Tasks = @(
+            @{ Name = 'Igények - Front Office'; RequiresSheetPath = $false; Action = { Write-Log 'Printing schedule requests for the front office'; Print-RequestFrontOffice } },
+            @{ Name = 'Jelenléti ív - Front Office'; RequiresSheetPath = $true; Action = { Write-Log 'Printing attendance sheets for the front office'; Print-AttandanceSheetFrontOffice -OpenFile $script:SelectedSheetPath } }
+        )
     },
     @{
-        Header = "Fürdő"
-        Tasks = @{
-            "Igények - Fürdő" = {
-                Write-Log "Printing schedule requests for the staff"
-                Print-RequestUszomester
-            }
-            "Jelenléti ív - Fürdő" = {
-                Write-Log "Printing attendance sheets for the staff"
-                Print-AttandanceSheetUszomester -OpenFile $path
-            }
-            "Utazási támogatás" = {
-                Write-Log "Printing commuting allowance"
-                Print-CommutingAllowance
-            }            
-        }
+        Header = 'Fürdő'
+        Tasks = @(
+            @{ Name = 'Igények - Fürdő'; RequiresSheetPath = $false; Action = { Write-Log 'Printing schedule requests for the staff'; Print-RequestUszomester } },
+            @{ Name = 'Jelenléti ív - Fürdő'; RequiresSheetPath = $true; Action = { Write-Log 'Printing attendance sheets for the staff'; Print-AttandanceSheetUszomester -OpenFile $script:SelectedSheetPath } },
+            @{ Name = 'Utazási támogatás'; RequiresSheetPath = $false; Action = { Write-Log 'Printing commuting allowance'; Print-CommutingAllowance } }
+        )
     },
     @{
-        Header = "Domb Beach"
-        Tasks = @{
-            "Igények - Domb Beach" = {
-                Write-Log "Printing schedule requests for Domb Beach"
-                Print-RequestDombBeach
-            }
-        }
+        Header = 'Domb Beach'
+        Tasks = @(
+            @{ Name = 'Igények - Domb Beach'; RequiresSheetPath = $false; Action = { Write-Log 'Printing schedule requests for Domb Beach'; Print-RequestDombBeach } }
+        )
     },
     @{
-        Header = "Karbantartók"
-        Tasks = @{
-            "Jelenléti ív - Karbantartó" = {
-                Write-Log "Printing attendance sheets for the genitors"
-                Print-AttandanceSheetKarbantarto -OpenFile $path
-            }
-        }
+        Header = 'Karbantartók'
+        Tasks = @(
+            @{ Name = 'Jelenléti ív - Karbantartó'; RequiresSheetPath = $true; Action = { Write-Log 'Printing attendance sheets for the genitors'; Print-AttandanceSheetKarbantarto -OpenFile $script:SelectedSheetPath } }
+        )
     },
     @{
-        Header = "Vízgépész"
-        Tasks = @{
-            "Jelenléti ív - Gépész" = {
-                Write-Log "Printing attendance sheets for the pool technicians"
-                Print-AttandanceSheetGepesz -OpenFile $path
-            }
-        }
+        Header = 'Vízgépész'
+        Tasks = @(
+            @{ Name = 'Jelenléti ív - Gépész'; RequiresSheetPath = $true; Action = { Write-Log 'Printing attendance sheets for the pool technicians'; Print-AttandanceSheetGepesz -OpenFile $script:SelectedSheetPath } }
+        )
     },
     @{
-        Header = "Gyógyászat"
-        Tasks = @{
-            "Igények - Gyógyászat" = {
-                Write-Log "Printing schedule requests for the medical department"
-                Print-RequestGyogyaszat
-            }
-            "Jelenléti ív - Gyógyászat" = {
-                Write-Log "Printing attendance sheets for the mediacal department"
-                Print-AttandanceSheetGyogyaszat -OpenFile $path
-            }
-        }
+        Header = 'Gyógyászat'
+        Tasks = @(
+            @{ Name = 'Igények - Gyógyászat'; RequiresSheetPath = $false; Action = { Write-Log 'Printing schedule requests for the medical department'; Print-RequestGyogyaszat } },
+            @{ Name = 'Jelenléti ív - Gyógyászat'; RequiresSheetPath = $true; Action = { Write-Log 'Printing attendance sheets for the medical department'; Print-AttandanceSheetGyogyaszat -OpenFile $script:SelectedSheetPath } }
+        )
+    },
+    @{
+        Header = 'Önkormányzat'
+        Tasks = @(
+            @{ Name = 'Jelenléti ív - Önkormányzat'; RequiresSheetPath = $true; Action = { Write-Log 'Printing attendance sheets for the municipality'; Print-AttandanceSheetOnkormanyzat -OpenFile $script:SelectedSheetPath } }
+        )
     }
 )
 
-# XAML layout
 [xml]$XAML = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        Title="Print Manager" Height="650" Width="440" WindowStartupLocation="CenterScreen">
-    <DockPanel Margin="10">
-        <StackPanel  DockPanel.Dock="Top">
-            <CheckBox Name="SelectAllBox" Content="Select All" Margin="0,0,0,10" />
-            <ScrollViewer VerticalScrollBarVisibility="Disabled">
-                <StackPanel Name="TaskList" />
-            </ScrollViewer>
-        </StackPanel>
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Print Manager"
+        Height="760"
+        Width="1100"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="CanResize"
+        AllowDrop="True"
+        FontFamily="Segoe UI"
+        FontSize="14"
+        Background="{DynamicResource BackgroundBrush}">
+    <Window.Resources>
+        $(Get-WpfSharedStylesXaml -IncludeButtonStyles -IncludeTextBoxStyles)
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+        </Style>
+        <Style TargetType="CheckBox">
+            <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+            <Setter Property="Margin" Value="0,4,0,4"/>
+        </Style>
+        <Style x:Key="SectionHeader" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+            <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}"/>
+        </Style>
+        <Style x:Key="CardBorder" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource SurfaceBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="Padding" Value="16"/>
+            <Setter Property="Margin" Value="0,0,0,12"/>
+        </Style>
+    </Window.Resources>
 
-        <Button DockPanel.Dock="Top" Name="RunButton" Height="40" Margin="0,10,0,10" Content="Nyomtatás" />
-    </DockPanel>
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Style="{StaticResource CardBorder}">
+            <StackPanel>
+                <TextBlock Text="Nyomtatási kezelő" FontSize="24" FontWeight="Bold" Margin="0,0,0,6"/>
+                <TextBlock Text="Válasszon egy jelenléti ív XLS/XLSX fájlt, majd jelölje ki a nyomtatandó feladatokat." TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}"/>
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="1" Style="{StaticResource CardBorder}">
+            <StackPanel>
+                <TextBlock Text="Jelenléti ív fájl" Style="{StaticResource SectionHeader}"/>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox Name="PathBox" Margin="0,0,10,0" IsReadOnly="True" Text="Nincs fájl kiválasztva"/>
+                    <Button Name="BrowseButton" Grid.Column="1" Content="Tallózás" Style="{StaticResource PrimaryButton}" Width="110"/>
+                </Grid>
+                <TextBlock Text="A kiválasztott fájl minden nyomtatási feladathoz használatos." Margin="0,8,0,0" Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap"/>
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="2" Style="{StaticResource CardBorder}">
+            <StackPanel>
+                <Grid Margin="0,0,0,8">
+                    <TextBlock Text="Feladatok" Style="{StaticResource SectionHeader}"/>
+                    <CheckBox Name="SelectAllBox" Content="Összes kijelölése" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                </Grid>
+                <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="360">
+                    <WrapPanel Name="TaskList" Orientation="Horizontal" HorizontalAlignment="Center"/>
+                </ScrollViewer>
+            </StackPanel>
+        </Border>
+
+        <Grid Grid.Row="3" Margin="0,8,0,0">
+    <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto"/>
+        <ColumnDefinition Width="*"/>
+        <ColumnDefinition Width="Auto"/>
+    </Grid.ColumnDefinitions>
+
+    <Button Name="ManageNamesButton"
+            Grid.Column="0"
+            Content="Névsor kezelése"
+            Width="160"
+            Margin="0,0,10,0"/>
+
+    <StackPanel Grid.Column="2"
+                Orientation="Horizontal"
+                HorizontalAlignment="Right">
+        <Button Name="RunButton"
+                Content="Nyomtatás"
+                Style="{StaticResource PrimaryButton}"
+                Width="140"
+                Margin="0,0,10,0"/>
+        <Button Name="CloseButton"
+                Content="Bezárás"
+                Width="110"/>
+    </StackPanel>
+</Grid>
+    </Grid>
 </Window>
 "@
 
-# Load XAML and connect elements
 $reader = (New-Object System.Xml.XmlNodeReader $XAML)
 $Window = [Windows.Markup.XamlReader]::Load($reader)
 
-$TaskList = $Window.FindName("TaskList")
-$RunButton = $Window.FindName("RunButton")
-$SelectAllBox = $Window.FindName("SelectAllBox")
+$TaskList = $Window.FindName('TaskList')
+$TaskList.HorizontalAlignment = [System.Windows.HorizontalAlignment]::Center
+$RunButton = $Window.FindName('RunButton')
+$SelectAllBox = $Window.FindName('SelectAllBox')
+$BrowseButton = $Window.FindName('BrowseButton')
+$PathBox = $Window.FindName('PathBox')
+$CloseButton = $Window.FindName('CloseButton')
+$ManageNamesButton = $Window.FindName('ManageNamesButton')
 
-# Store all tasks and checkboxes
+function Set-AttendanceSheetPath {
+    param(
+        [string]$Path
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Path) -or -not (Test-Path $Path)) {
+        return
+    }
+
+    $extension = [System.IO.Path]::GetExtension($Path).ToLowerInvariant()
+
+    if ($extension -ne '.xlsx') {
+        [System.Windows.MessageBox]::Show(
+            'Csak Excel fájl (*.xlsx) választható ki.',
+            'Érvénytelen fájl',
+            'OK',
+            'Warning'
+        ) | Out-Null
+
+        return
+    }
+
+    try {
+
+        $zip = [System.IO.Compression.ZipFile]::OpenRead($Path)
+
+        try {
+            $entry = $zip.GetEntry('xl/workbook.xml')
+
+            if (-not $entry) {
+                throw "Missing workbook.xml"
+            }
+
+            $reader = New-Object System.IO.StreamReader($entry.Open())
+
+            try {
+                $xml = [xml]$reader.ReadToEnd()
+            }
+            finally {
+                $reader.Dispose()
+            }
+
+            $hasFizikai = $xml.workbook.sheets.sheet.name -contains 'Fizikai'
+        }
+        finally {
+            $zip.Dispose()
+        }
+
+        if (-not $hasFizikai) {
+            [System.Windows.MessageBox]::Show(
+                'A kiválasztott munkafüzet nem megfelelő.',
+                'Rossz fájl',
+                'OK',
+                'Warning'
+            ) | Out-Null
+
+            return
+        }
+    }
+    catch {
+        [System.Windows.MessageBox]::Show(
+            'A kiválasztott munkafüzet nem megfelelő.',
+            'Rossz fájl',
+            'OK',
+            'Warning'
+        ) | Out-Null
+
+        return
+    }
+
+    $script:SelectedSheetPath = (Resolve-Path $Path).Path
+    $PathBox.Text = $script:SelectedSheetPath
+}
+
 $Tasks = @{}
 $CheckBoxes = @{}
+$TaskMetadata = @{}
 
-# Add UI elements by section
 foreach ($group in $TaskGroups) {
-    # Header
+    $section = New-Object System.Windows.Controls.Border
+    $section.Style = $Window.FindResource('CardBorder')
+    $section.Width = 240
+    $section.VerticalAlignment = [System.Windows.VerticalAlignment]::Top
+    $section.Margin = '0,0,12,12'
+
+    $content = New-Object System.Windows.Controls.StackPanel
     $header = New-Object System.Windows.Controls.TextBlock
     $header.Text = $group.Header
     $header.FontWeight = 'Bold'
-    $header.Margin = '0,10,0,2'
-    $TaskList.Children.Add($header)
+    $header.Margin = '0,0,0,6'
+    $content.Children.Add($header)
 
-    # Separator
     $sep = New-Object System.Windows.Controls.Separator
-    $sep.Margin = '0,0,0,10'
-    $TaskList.Children.Add($sep)
+    $sep.Margin = '0,0,0,8'
+    $content.Children.Add($sep)
 
-    # Task checkboxes
-    foreach ($taskName in $group.Tasks.Keys) {
+    foreach ($task in $group.Tasks) {
         $cb = New-Object System.Windows.Controls.CheckBox
-        $cb.Content = $taskName
-        $cb.Margin = '0,5,0,5'
-        $TaskList.Children.Add($cb)
-        $CheckBoxes[$taskName] = $cb
-        $Tasks[$taskName] = $group.Tasks[$taskName]
+        $cb.Content = ($task.Name -split ' - ')[0]
+        $cb.ToolTip = if ($task.RequiresSheetPath) { 'Ez a feladat egy kiválasztott jelenléti ív fájlt igényel.' } else { 'Ez a feladat nem igényel jelenléti ív fájlt.' }
+        $content.Children.Add($cb)
+        $CheckBoxes[$task.Name] = $cb
+        $Tasks[$task.Name] = $task.Action
+        $TaskMetadata[$task.Name] = $task
     }
+
+    $section.Child = $content
+    $TaskList.Children.Add($section)
 }
 
-# Select All checkbox behavior
 $SelectAllBox.Add_Checked({
     foreach ($cb in $CheckBoxes.Values) { $cb.IsChecked = $true }
 })
@@ -165,21 +320,101 @@ $SelectAllBox.Add_Unchecked({
     foreach ($cb in $CheckBoxes.Values) { $cb.IsChecked = $false }
 })
 
-# Run button behavior
-$RunButton.Add_Click({
-    foreach ($taskName in $Tasks.Keys) {
-        if ($CheckBoxes[$taskName].IsChecked) {
-            try {
-                Write-Log "Running: ${taskName}"
-                & $Tasks[$taskName]
-                Write-Log "Done: ${taskName}"
-            } catch {
-                Write-Log "Error in ${taskName}: $($_.Exception.Message)" -Level Error -ShowMessageBox
+$BrowseButton.Add_Click({
+    $dialog = New-Object System.Windows.Forms.OpenFileDialog
+    $dialog.Title = 'Jelenléti ív kiválasztása'
+    $dialog.Filter = 'Excel files (*.xls;*.xlsx;*.xlsm)|*.xls;*.xlsx;*.xlsm'
+    $dialog.InitialDirectory = $env:USERPROFILE
+
+    if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+        Set-AttendanceSheetPath $dialog.FileName
+    }
+})
+
+$Window.Add_DragOver({
+
+    if ($_.Data.GetDataPresent([System.Windows.DataFormats]::FileDrop)) {
+
+        $files = $_.Data.GetData([System.Windows.DataFormats]::FileDrop)
+
+        if ($files.Count -eq 1) {
+
+            $extension = [System.IO.Path]::GetExtension($files[0]).ToLowerInvariant()
+
+            if ($extension -in '.xls', '.xlsx', '.xlsm') {
+                $_.Effects = [System.Windows.DragDropEffects]::Copy
             }
+            else {
+                $_.Effects = [System.Windows.DragDropEffects]::None
+            }
+        }
+        else {
+            $_.Effects = [System.Windows.DragDropEffects]::None
+        }
+    }
+    else {
+        $_.Effects = [System.Windows.DragDropEffects]::None
+    }
+
+    $_.Handled = $true
+})
+
+$Window.Add_Drop({
+
+    if ($_.Data.GetDataPresent([System.Windows.DataFormats]::FileDrop)) {
+
+        $files = $_.Data.GetData([System.Windows.DataFormats]::FileDrop)
+
+        if ($files.Count -gt 0) {
+            Set-AttendanceSheetPath $files[0]
+        }
+    }
+
+    $_.Handled = $true
+})
+
+$ManageNamesButton.Add_Click({
+
+    $scriptPath = Join-Path $PSScriptRoot 'editAttendenceSheetNames.ps1'
+
+    if (-not (Test-Path $scriptPath)) {
+        [System.Windows.MessageBox]::Show(
+            "Nem található:`n$scriptPath",
+            "Hiba",
+            "OK",
+            "Error"
+        ) | Out-Null
+        return
+    }
+
+    Start-Process "$env:LOCALAPPDATA\Microsoft\WindowsApps\pwsh.exe" `
+    -ArgumentList "-File `"$PSScriptRoot\editAttendenceSheetNames.ps1`"" `
+    -WindowStyle Hidden
+
+})
+
+$RunButton.Add_Click({
+    $selectedTasks = @($Tasks.Keys | Where-Object { $CheckBoxes[$_].IsChecked })
+    $requiresSheetPath = @($selectedTasks | Where-Object { $TaskMetadata[$_].RequiresSheetPath })
+
+    if ($requiresSheetPath.Count -gt 0 -and -not $script:SelectedSheetPath) {
+        [System.Windows.MessageBox]::Show('A kijelölt nyomtatási feladatokhoz előbb válasszon ki egy jelenléti ív fájlt.', 'Hiányzó fájl', 'OK', 'Warning') | Out-Null
+        return
+    }
+
+    foreach ($taskName in $selectedTasks) {
+        try {
+            Write-Log "Running: $taskName"
+            & $Tasks[$taskName]
+            Write-Log "Done: $taskName"
+        }
+        catch {
+            Write-Log "Error in ${taskName}: $($_.Exception.Message)" -Level Error -ShowMessageBox
         }
     }
 })
 
-# Show window
-$Window.Topmost = $true
+$CloseButton.Add_Click({ $Window.Close() })
+
+$Window.Topmost = $false
 $Window.ShowDialog() | Out-Null
