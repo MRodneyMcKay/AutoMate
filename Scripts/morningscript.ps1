@@ -69,6 +69,10 @@ $job2 = Start-ThreadJob -Name "StudentReport" -ScriptBlock {
             open-StudentWorkReportStrand -fillCompletely $fill
         }
 
+        if ((Get-Date).Month -in 6,7,8,9) {
+            open-StudentWorkReportBeach -fillCompletely $fill
+        }
+
         Set-ItemProperty -Path $registryPath -Name YesterdaysWorkingHours -value (Get-Date).Day
     } else {
         Write-Log -Message "Diákelszámolás már elkészült"
