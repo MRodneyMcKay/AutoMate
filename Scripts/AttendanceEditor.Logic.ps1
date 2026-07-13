@@ -360,6 +360,86 @@ function Delete-Department {
     Save-All
 }
 
+function Get-ListBoxItemAtPoint {
+    param (
+        [System.Windows.Controls.ListBox]$ListBox,
+        [System.Windows.Point]$Point
+    )
+
+    $Element = $ListBox.InputHitTest($Point)
+    while ($Element -and -not ($Element -is [System.Windows.Controls.ListBoxItem])) {
+        $Element = [System.Windows.Media.VisualTreeHelper]::GetParent($Element)
+    }
+    return $Element
+}
+
+function Enable-ListBoxDragSelection {
+    param (
+        [System.Windows.Controls.ListBox]$ListBox
+    )
+
+    # Per-list drag state, captured by closure below so each ListBox gets its own instance.
+    $DragState = @{
+        IsDragging  = $false
+        AnchorIndex = -1
+        LastStart   = -1
+        LastEnd     = -1
+    }
+
+    $ListBox.Add_PreviewMouseLeftButtonDown({
+        param ($Sender, $Event)
+
+        # Plain click/drag only; Ctrl-click and Shift-click keep their normal WPF behaviour.
+        if ([System.Windows.Input.Keyboard]::Modifiers -ne [System.Windows.Input.ModifierKeys]::None) { return }
+
+        $Item = Get-ListBoxItemAtPoint -ListBox $Sender -Point $Event.GetPosition($Sender)
+        if ($null -eq $Item) { return }
+
+        $Index = $Sender.ItemContainerGenerator.IndexFromContainer($Item)
+        if ($Index -lt 0) { return }
+
+        $DragState.IsDragging  = $true
+        $DragState.AnchorIndex = $Index
+        $DragState.LastStart   = $Index
+        $DragState.LastEnd     = $Index
+    }.GetNewClosure())
+
+    $ListBox.Add_PreviewMouseMove({
+        param ($Sender, $Event)
+
+        if (-not $DragState.IsDragging) { return }
+        if ($Event.LeftButton -ne [System.Windows.Input.MouseButtonState]::Pressed) {
+            $DragState.IsDragging = $false
+            return
+        }
+
+        $Item = Get-ListBoxItemAtPoint -ListBox $Sender -Point $Event.GetPosition($Sender)
+        if ($null -eq $Item) { return }
+
+        $Index = $Sender.ItemContainerGenerator.IndexFromContainer($Item)
+        if ($Index -lt 0) { return }
+
+        $Start = [Math]::Min($DragState.AnchorIndex, $Index)
+        $End   = [Math]::Max($DragState.AnchorIndex, $Index)
+
+        # Skip if the range hasn't changed since the last move, to avoid redundant SelectionChanged events.
+        if ($Start -eq $DragState.LastStart -and $End -eq $DragState.LastEnd) { return }
+
+        $DragState.LastStart = $Start
+        $DragState.LastEnd   = $End
+
+        $Sender.SelectedItems.Clear()
+        for ($i = $Start; $i -le $End; $i++) {
+            [void]($Sender.SelectedItems.Add($Sender.Items[$i]))
+        }
+    }.GetNewClosure())
+
+    $ListBox.Add_PreviewMouseLeftButtonUp({
+        param ($Sender, $Event)
+        $DragState.IsDragging = $false
+    }.GetNewClosure())
+}
+
 function New-PositionTab {
     param (
         [string]$DeptName,
@@ -410,6 +490,7 @@ function New-PositionTab {
     $List.Margin = "0,0,0,15"
     $List.ItemsSource = $global:Data[$DeptName].Positions[$PosName]
     [Windows.Controls.Grid]::SetRow($List, 0)
+    Enable-ListBoxDragSelection -ListBox $List
 
     $Panel = New-Object System.Windows.Controls.StackPanel
     $Panel.Orientation = "Horizontal"
