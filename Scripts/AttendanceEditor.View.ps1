@@ -254,6 +254,34 @@ function Initialize-EditorWindow {
         }
     })
 
+    $global:Window.Add_PreviewMouseDown({
+    param($Sender, $Event)
+
+    $source = $Event.OriginalSource
+
+    while ($source) {
+
+        # Clicking a name should not cancel
+        if ($source -is [System.Windows.Controls.ListBoxItem]) {
+            return
+        }
+
+        # Clicking any of these controls should not cancel
+        if ($source -is [System.Windows.Controls.Button] -or
+            $source -is [System.Windows.Controls.TextBox] -or
+            $source -is [System.Windows.Controls.TabItem] -or
+            $source -is [System.Windows.Controls.MenuItem] -or
+            $source -is [System.Windows.Controls.ContextMenu]) {
+            return
+        }
+
+        $source = [System.Windows.Media.VisualTreeHelper]::GetParent($source)
+    }
+
+    # User clicked on empty background.
+    Cancel-NameEdit
+})
+
     $global:SaveButton.Add_Click({ Save-All })
     $global:ReloadButton.Add_Click({ Load-All })
 

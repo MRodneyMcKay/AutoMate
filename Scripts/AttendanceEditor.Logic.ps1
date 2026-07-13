@@ -254,6 +254,18 @@ function Update-NameInCurrentPosition {
     $Controls.List.SelectedItem = $null
 }
 
+function Cancel-NameEdit {
+    $Context = Get-CurrentDeptAndPosition
+    if ($null -eq $Context) {
+        return
+    }
+
+    $Controls = $global:DeptControls[$Context.DeptName].PositionControls[$Context.PosName]
+
+    $Controls.Box.Clear()
+    $Controls.List.SelectedItem = $null
+}
+
 function Confirm-Deletion {
     param (
         [string]$Message,
@@ -462,10 +474,7 @@ function New-PositionTab {
 
     $DeleteButton.Add_Click({ Remove-NameFromCurrentPosition })
 
-    $MegseButton.Add_Click({
-        $Box.Clear()
-        $List.SelectedItem = $null
-    }.GetNewClosure())
+    $MegseButton.Add_Click({ Cancel-NameEdit })
 
     $Box.Add_KeyDown({
         param ($Sender, $Event)
