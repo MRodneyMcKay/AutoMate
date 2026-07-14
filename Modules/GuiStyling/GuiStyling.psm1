@@ -23,5 +23,6 @@ Add-Type -AssemblyName WindowsBase -ErrorAction Stop
 . $PSScriptRoot\Public\Get-ThemePalette.ps1
 . $PSScriptRoot\Public\Get-WpfSharedStylesXaml.ps1
 . $PSScriptRoot\Public\Show-ModernInputBox.ps1
+. $PSScriptRoot\Public\NameEditor.ps1
 
-Export-ModuleMember -Function Convert-ColorToHex, Merge-Colors, Get-ThemePalette, Get-SharedButtonStylesXaml, Get-WpfSharedStylesXaml, Show-ModernInputBox
+Export-ModuleMember -Function Get-ListBoxItemAtPoint, New-ThemeResourceDictionary, New-NameEditorControl, Convert-ColorToHex, Merge-Colors, Get-ThemePalette, Get-SharedButtonStylesXaml, Get-WpfSharedStylesXaml, Show-ModernInputBox
