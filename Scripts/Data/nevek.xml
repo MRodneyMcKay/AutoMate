@@ -1,0 +1,135 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Jelenlet>
+  <Department>
+    <Name>Fürdő</Name>
+    <Facility>Kecskeméti Fürdő</Facility>
+    <Position>
+      <Name>Műszakvezető</Name>
+      <Nev>Baksa Zsolt</Nev>
+      <Nev>Fekete Zoltán</Nev>
+      <Nev>Fodor Szilárd</Nev>
+      <Nev>Jávorka István</Nev>
+      <Nev>Novák Zoltán</Nev>
+    </Position>
+    <Position>
+      <Name>Úszómester</Name>
+      <Nev>Farkas Bence</Nev>
+      <Nev>Gál Hanna</Nev>
+      <Nev>Gyulai Károly</Nev>
+      <Nev>Horváth Máté</Nev>
+      <Nev>Krasznai Lajos</Nev>
+      <Nev>Márkusné Járomi Anikó</Nev>
+      <Nev>Molnárné Hajdú Angéla</Nev>
+      <Nev>Nyilas Tamás</Nev>
+      <Nev>Ördög-Gyenes István</Nev>
+      <Nev>Paré Máté</Nev>
+      <Nev>Rózsavölgyi Réka</Nev>
+      <Nev>Savic Kornél</Nev>
+      <Nev>Somfai Attila Józsefné</Nev>
+      <Nev>Szabó László</Nev>
+      <Nev>Szabó Marcell</Nev>
+    </Position>
+    <Position>
+      <Name>Öltözőszolgálat</Name>
+      <Nev>Komlós Zoltán</Nev>
+      <Nev>Koncz Józsefné</Nev>
+    </Position>
+    <Position>
+      <Name>Szauna</Name>
+      <Nev>Cosa Diána Katalin</Nev>
+      <Nev>Fekete László</Nev>
+      <Nev>Kecskés István</Nev>
+      <Nev>Lakó Bernadett</Nev>
+    </Position>
+    <Position>
+      <Name>Önkormányzat</Name>
+      <Nev>Gál Zsófia</Nev>
+      <Nev>Tőkés Jázmin</Nev>
+    </Position>
+  </Department>
+  <Department>
+    <Name>Front office</Name>
+    <Facility>Kecskeméti Fürdő</Facility>
+    <Position>
+      <Name>Recepció</Name>
+      <Nev>Antal Natália</Nev>
+      <Nev>Raduska Zsolt</Nev>
+    </Position>
+    <Position>
+      <Name>Jegypénztár</Name>
+      <Nev>Ábel Istvánné</Nev>
+      <Nev>Izsák Éva</Nev>
+      <Nev>Molnár Lilla</Nev>
+      <Nev>Tóth Ildikó</Nev>
+      <Nev>Tóth János Károlyné</Nev>
+      <Nev>Urbán Edit</Nev>
+    </Position>
+    <Position>
+      <Name>Önkormányzat</Name>
+      <Nev>Hassanein Aziz Ádám</Nev>
+      <Nev>Somodi Zselyke Zsófia</Nev>
+    </Position>
+  </Department>
+  <Department>
+    <Name>Domb beach</Name>
+    <Facility>Kecskeméti Fürdő</Facility>
+    <Position>
+      <Name>Úszómester</Name>
+      <Nev>Fekete Zoltán</Nev>
+      <Nev>Török László</Nev>
+    </Position>
+  </Department>
+  <Department>
+    <Name>Gépészet</Name>
+    <Facility>Kecskeméti Fürdő</Facility>
+    <Position>
+      <Name>Vízgépész</Name>
+      <Nev>Domján Balázs</Nev>
+      <Nev>Katona Zoltán</Nev>
+      <Nev>Mogyorósi Levente</Nev>
+      <Nev>Szabó János</Nev>
+      <Nev>Török László</Nev>
+      <Nev>Varga István</Nev>
+    </Position>
+  </Department>
+  <Department>
+    <Name>Karbantartó</Name>
+    <Facility>Kecskeméti Fürdő</Facility>
+    <Position>
+      <Name>Karbantartó</Name>
+      <Nev>Hajnal György</Nev>
+      <Nev>Horváth Attila</Nev>
+      <Nev>Rácz János</Nev>
+      <Nev>Szabó Albert</Nev>
+      <Nev>Szöllősi Antal</Nev>
+    </Position>
+  </Department>
+  <Department>
+    <Name>Gyógyászat</Name>
+    <Facility>Kecskeméti Fürdő</Facility>
+    <Position>
+      <Name>Gyógytornász</Name>
+      <Nev>Adamik Nóra</Nev>
+      <Nev>Mikulás Mirjam</Nev>
+    </Position>
+    <Position>
+      <Name>Masszőr</Name>
+      <Nev>Benkő Erzsébet</Nev>
+      <Nev>Király Péter</Nev>
+      <Nev>Prikidánovics Márk</Nev>
+      <Nev>Szabó Erika</Nev>
+      <Nev>Varga István</Nev>
+    </Position>
+    <Position>
+      <Name>Recepció</Name>
+      <Nev>Bodonyi Gréta</Nev>
+    </Position>
+  </Department>
+  <Department>
+    <Name>Strand</Name>
+    <Facility>Széktói Strand</Facility>
+    <Position>
+      <Name>Önkormányzat</Name>
+    </Position>
+  </Department>
+</Jelenlet>

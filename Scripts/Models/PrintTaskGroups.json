@@ -1,0 +1,92 @@
+[
+  {
+    "Header": "Front Office",
+    "Tasks": [
+      {
+        "Name": "Igények",
+        "RequiresSheetPath": false,
+        "ActionId": "PrintRequestFrontOffice"
+      },
+      {
+        "Name": "Jelenléti ív",
+        "RequiresSheetPath": true,
+        "ActionId": "PrintAttendanceFrontOffice"
+      }
+    ]
+  },
+  {
+    "Header": "Fürdő",
+    "Tasks": [
+      {
+        "Name": "Igények",
+        "RequiresSheetPath": false,
+        "ActionId": "PrintRequestUszomester"
+      },
+      {
+        "Name": "Jelenléti ív",
+        "RequiresSheetPath": true,
+        "ActionId": "PrintAttendanceUszomester"
+      },
+      {
+        "Name": "Utazási támogatás",
+        "RequiresSheetPath": false,
+        "ActionId": "PrintCommutingAllowance"
+      }
+    ]
+  },
+  {
+    "Header": "Domb Beach",
+    "Tasks": [
+      {
+        "Name": "Igények",
+        "RequiresSheetPath": false,
+        "ActionId": "PrintRequestDombBeach"
+      }
+    ]
+  },
+  {
+    "Header": "Karbantartók",
+    "Tasks": [
+      {
+        "Name": "Jelenléti ív",
+        "RequiresSheetPath": true,
+        "ActionId": "PrintAttendanceKarbantarto"
+      }
+    ]
+  },
+  {
+    "Header": "Vízgépész",
+    "Tasks": [
+      {
+        "Name": "Jelenléti ív",
+        "RequiresSheetPath": true,
+        "ActionId": "PrintAttendanceGepesz"
+      }
+    ]
+  },
+  {
+    "Header": "Gyógyászat",
+    "Tasks": [
+      {
+        "Name": "Igények",
+        "RequiresSheetPath": false,
+        "ActionId": "PrintRequestGyogyaszat"
+      },
+      {
+        "Name": "Jelenléti ív",
+        "RequiresSheetPath": true,
+        "ActionId": "PrintAttendanceGyogyaszat"
+      }
+    ]
+  },
+  {
+    "Header": "Önkormányzat",
+    "Tasks": [
+      {
+        "Name": "Jelenléti ív",
+        "RequiresSheetPath": true,
+        "ActionId": "PrintAttendanceOnkormanyzat"
+      }
+    ]
+  }
+]

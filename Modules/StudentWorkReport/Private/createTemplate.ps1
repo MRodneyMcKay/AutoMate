@@ -177,15 +177,28 @@ function Create-Template {
      "=D$($row)<>SZUM(F$($row):H$($row))", [Type]::Missing, [Type]::Missing, [Type]::Missing, [Type]::Missing, [Type]::Missing)
     $condition.Interior.Color = RGB -r 255 -g 0 -b 0
     
-    $storedEFONames = [System.Environment]::GetEnvironmentVariable("EfoNévsor", [System.EnvironmentVariableTarget]::User)
-    $efoNames = $storedEFONames -split ";" | Sort-Object
-    $worksheet.Range("J1").Value2 = "EFO névsor"
-    $row = 2
-    foreach ($nev in $efoNames) {
-        $worksheet.Range("J$row").Value2 = $nev
-        $row++
-    }
-    $worksheet.Columns(10).Hidden=$true
+    # Resolve EFONames.xml relative to this script's folder
+$xmlPath = Join-Path (Resolve-Path "$PSScriptRoot\..\..\..") 'Scripts\Data\EFONames.xml'
+
+# Load XML
+[xml]$xml = Get-Content -LiteralPath $xmlPath
+
+# Extract <Name> entries and sort them
+$efoNames = $xml.EFONames.Name | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Sort-Object
+
+# Write header
+$worksheet.Range("J1").Value2 = "EFO névsor"
+
+# Write names into column J
+$row = 2
+foreach ($nev in $efoNames) {
+    $worksheet.Range("J$row").Value2 = $nev
+    $row++
+}
+
+# Hide column J (same as before)
+$worksheet.Columns(10).Hidden = $true
+
     return [pscustomobject] @{
         "Application" = $excel
         "Workbook"    = $workbook

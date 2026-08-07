@@ -20,7 +20,7 @@ Add-Type -AssemblyName PresentationFramework
 Add-Type -AssemblyName System.Xml.Linq
 
 # Path to the attendance XML file
-$Script:AttendanceXmlPath = "C:\Users\Hirossport\Hiros Sport Nonprofit Kft\Hiros-sport - Dokumentumok\Furdo\Recepcio\Nyomtatni\Jelenlétik, igények\nevek.xml"
+$Script:AttendanceXmlPath = Join-Path (Resolve-Path "$PSScriptRoot\..\..\..") 'Scripts\Data\nevek.xml'
 
 # Function to load XML and get all names from a department, excluding a specific position
 function Get-DepartmentNames {
