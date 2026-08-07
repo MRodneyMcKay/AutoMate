@@ -3,12 +3,21 @@
 
 # Allow directories containing allowed files
 !*/
-
 # Allow only PowerShell script files
 !*.ps1
 !*.psm1
 !*.psd1
+!*.xaml
+
+#Allow C# code
+!*.cs
+!*.csproj
+
+#Allow data files
 !*.json
+!*.xml
+**/obj/**
+
 
 # Allow Git-related files
 !.gitignore
