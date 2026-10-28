@@ -21,9 +21,10 @@ Add-Type -AssemblyName System.Xml.Linq
 
 # Path to the attendance XML file
 $Script:AttendanceXmlPath = Join-Path (Resolve-Path "$PSScriptRoot\..\..\..") 'Scripts\Data\nevek.xml'
+Write-Log -Message "Attendance XML Path: $Script:AttendanceXmlPath" -Level "INFO"
 
 # Function to load XML and get all names from a department, excluding a specific position
-function Get-DepartmentNames {
+<#function Get-DepartmentNames {
     param (
         [string]$DepartmentName,
         [string]$ExcludePosition = "Önkormányzat"
@@ -55,7 +56,45 @@ function Get-DepartmentNames {
         Write-Log -Message "Hiba az XML olvasásakor: $($_.Exception.Message)" -Level "ERROR"
         return @()
     }
+}#>
+
+function Get-DepartmentNames {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$DepartmentName,
+
+        [string]$ExcludePosition = "Önkormányzat"
+    )
+
+    try {
+        [xml]$xml = Get-Content -LiteralPath $Script:AttendanceXmlPath -Encoding UTF8
+
+        $Dept = $xml.Jelenlet.Department |
+            Where-Object { $_.Name -eq $DepartmentName } |
+            Select-Object -First 1
+
+        if (-not $Dept) {
+            Write-Log -Message "Részleg nem találva: $DepartmentName" -Level "ERROR"
+            return [string[]]@()
+        }
+
+        $Names = @(
+            $Dept.Position |
+                Where-Object { $_.Name -ne $ExcludePosition } |
+                ForEach-Object { $_.Nev } |
+                Where-Object { -not [string]::IsNullOrWhiteSpace($_.ToString()) } |
+                ForEach-Object { $_.ToString().Trim() } |
+                Sort-Object
+        )
+
+        return [string[]]$Names
+    }
+    catch {
+        Write-Log -Message "Hiba az XML olvasásakor: $($_.Exception.Message)" -Level "ERROR"
+        return [string[]]@()
+    }
 }
+
 
 # Function to get only names from a specific position across all departments
 function Get-PositionNames {

@@ -19,8 +19,8 @@ Add-Type -AssemblyName PresentationFramework
 Add-Type -AssemblyName PresentationCore
 Add-Type -AssemblyName WindowsBase
 
-Import-Module (Join-Path $PSScriptRoot "..\Modules\WPFToolkit\WPFToolkit.psd1") -Force
 Import-Module (Join-Path $PSScriptRoot "..\Modules\LoggingSystem\LoggingSystem.psd1") -Force
+Import-Module (Join-Path $PSScriptRoot "..\Modules\WPFToolkit\WPFToolkit.psd1") -Force
 Import-Module (Join-Path $PSScriptRoot "..\Modules\PrintNextMonthFolder\PrintNextMonthFolder.psd1") -Force
 
 . "$PSScriptRoot\Models\PrintTaskModel.ps1"

@@ -17,6 +17,7 @@
 
 Import-Module (Join-Path -Path $PSScriptRoot -ChildPath '..\LoggingSystem\LoggingSystem.psd1')
 [System.Reflection.Assembly]::LoadFrom([System.Environment]::GetEnvironmentVariable("OfficeAssemblies_Excel", [System.EnvironmentVariableTarget]::User)) 
+Add-Type -AssemblyName System.Windows.Forms
 
 #import provate functions
 . $PSScriptRoot\Private\internalhelper.ps1

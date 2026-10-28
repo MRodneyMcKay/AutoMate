@@ -51,6 +51,7 @@ class AttendencePositionViewModel : WPFToolkit.MVVM.ObservableObject {
         $exists =  $this.Model.Names | Where-Object { $_.Equals( $name, [System.StringComparison]::InvariantCultureIgnoreCase ) }
         if(-not $exists){
             $this.Model.Names.Add( $name )
+            $this.Model.SortNames()
             $this.MarkDirty()
         }
     }
@@ -66,6 +67,7 @@ class AttendencePositionViewModel : WPFToolkit.MVVM.ObservableObject {
         $index = $this.Model.Names.IndexOf( $oldName )
         if($index -ge 0){
             $this.Model.Names[$index] = $newName
+            $this.Model.SortNames()
             $this.MarkDirty()
         }
     }

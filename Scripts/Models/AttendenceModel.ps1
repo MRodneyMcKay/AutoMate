@@ -33,6 +33,15 @@ class AttendencePosition {
     AttendencePosition() {
         $this.Names = [ObservableCollection[string]]::new()
     }
+
+    [void] SortNames() {
+        $culture = [System.Globalization.CultureInfo]::GetCultureInfo("hu-HU")
+        $sorted = @($this.Names | Sort-Object -Culture $culture)
+        $this.Names.Clear()
+        foreach ($name in $sorted) {
+            $this.Names.Add($name)
+        }
+    }
 }
 
 class AttendenceModel {
@@ -60,6 +69,7 @@ class AttendenceModel {
                 foreach($nameNode in $positionNode.Nev){
                     $position.Names.Add([string]$nameNode)
                 }
+                $position.SortNames()
                 $department.Positions.Add( $position )
             }
             $this.Departments.Add( $department )
@@ -80,6 +90,7 @@ class AttendenceModel {
                 foreach($position in $department.Positions){
                     $writer.WriteStartElement( "Position" )
                     $writer.WriteElementString( "Name", $position.Name )
+                    $position.SortNames()
                     foreach($name in $position.Names){
                         $writer.WriteElementString( "Nev", $name )
                     }
