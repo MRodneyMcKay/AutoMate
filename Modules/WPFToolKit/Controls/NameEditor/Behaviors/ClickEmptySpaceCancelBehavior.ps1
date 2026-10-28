@@ -24,13 +24,13 @@ Register-Behavior "ClickEmptyListSpaceCancel" {
     param($element)
 
 
-    if($element -isnot [ListBox])
+    if($element -isnot [System.Windows.Controls.ListBox])
     {
         throw "ClickEmptyListSpaceCancel requires ListBox"
     }
 
 
-    $listBox = [ListBox]$element
+    $listBox = [System.Windows.Controls.ListBox]$element
 
 
     $listBox.Add_PreviewMouseDown({
@@ -44,7 +44,7 @@ Register-Behavior "ClickEmptyListSpaceCancel" {
         while($source)
         {
 
-            if($source -is [ListBoxItem])
+            if($source -is [System.Windows.Controls.ListBoxItem])
             {
                 return
             }
@@ -57,7 +57,7 @@ Register-Behavior "ClickEmptyListSpaceCancel" {
 
 
             $source =
-                [VisualTreeHelper]::GetParent($source)
+                [System.Windows.Media.VisualTreeHelper]::GetParent($source)
         }
 
 

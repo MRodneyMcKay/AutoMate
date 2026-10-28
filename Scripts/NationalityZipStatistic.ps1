@@ -18,46 +18,93 @@
 $ModulePath = Join-Path -Path $PSScriptRoot -ChildPath "..\Modules\" 
 $resolvedModulePath = (Resolve-Path -Path $ModulePath).Path
 
+Add-Type -AssemblyName PresentationFramework
+Add-Type -AssemblyName PresentationCore
+Add-Type -AssemblyName WindowsBase
+
 Import-Module (Join-Path -Path $resolvedModulePath -ChildPath 'VisitorStatistic\VisitorStatistic.psd1')
+Import-Module (Join-Path -Path $resolvedModulePath -ChildPath 'WPFToolkit\WPFToolkit.psd1')
 
 [System.Reflection.Assembly]::LoadFrom([System.Environment]::GetEnvironmentVariable("OfficeAssemblies_Excel", [System.EnvironmentVariableTarget]::User))
 Add-Type -AssemblyName System.Windows.Forms
 
+. "$PSScriptRoot\ViewModels\NationalityZipStatisticViewModel.ps1"
+. "$PSScriptRoot\Views\NationalityZipStatisticView.ps1"
+
 function Get-MonthlyFilePairs {
     param (
-        [string]$Path
+        [string[]]$NationalityFiles,
+        [string[]]$ZipFiles
     )
 
-    $files = Get-ChildItem -Path $Path -Filter "*.csv" -File
+    $filesByMonth = @{
+        Nationality = @{}
+        Zip         = @{}
+    }
 
-    $parsed = foreach ($file in $files) {
-        if ($file.Name -match '^(\d{4})\D?(\d{2}).*?(irányító|irányitoszám|nemzet).*?\.csv$') {
-            [PSCustomObject]@{
-                Year  = $matches[1]
-                Month = $matches[2]
-                Type  = $matches[3]
-                Path  = $file.FullName
-                Key   = "$($matches[1])-$($matches[2])"
+    foreach ($fileGroup in @(
+            @{ Type = 'Nationality'; Paths = $NationalityFiles },
+            @{ Type = 'Zip'; Paths = $ZipFiles }
+        )) {
+        foreach ($path in $fileGroup.Paths) {
+            if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
+                throw "A fájl nem található: $path"
             }
+            if ([System.IO.Path]::GetExtension($path) -ine '.csv') {
+                throw "Csak CSV-fájl használható: $path"
+            }
+
+            $prefix = Get-FilePrefix $path $fileGroup.Type
+            if ($filesByMonth[$fileGroup.Type].ContainsKey($prefix)) {
+                throw "Több $($fileGroup.Type) fájl van ehhez az előtaghoz: $prefix"
+            }
+            $filesByMonth[$fileGroup.Type][$prefix] = $path
         }
     }
-    $grouped = $parsed | Group-Object Key | Where-Object {
-        $_.Group.Type -contains 'irányító' -or $_.Group.Type -contains 'irányitoszám'
-    } | Where-Object {
-        $_.Group.Type -contains 'nemzet'
+
+    $prefixes = @(
+        $filesByMonth.Nationality.Keys
+        $filesByMonth.Zip.Keys
+    ) | Sort-Object -Unique
+    if ($prefixes.Count -eq 0) {
+        throw "Válasszon legalább egy nemzetiségi és egy irányítószám-fájlt."
     }
-    $pairs = foreach ($group in $grouped) {
-        $irsz = $group.Group | Where-Object { $_.Type -like 'irányító' -or $_.Type -like 'irányitoszám' }
-        $nemz = $group.Group | Where-Object { $_.Type -eq 'nemzet' }
+
+    $pairs = foreach ($prefix in $prefixes) {
+        if (-not $filesByMonth.Nationality.ContainsKey($prefix) -or
+            -not $filesByMonth.Zip.ContainsKey($prefix)) {
+            throw "Hiányzik az előtaghoz tartozó párfájl: $prefix"
+        }
 
         [PSCustomObject]@{
-            Month     = $group.Name
-            IrszPath  = [string]$irsz.Path
-            NemzPath  = [string]$nemz.Path
+            Prefix   = $prefix
+            IrszPath = $filesByMonth.Zip[$prefix]
+            NemzPath = $filesByMonth.Nationality[$prefix]
         }
     }
 
-    return $pairs
+    return @($pairs)
+}
+
+function Get-FilePrefix {
+    param (
+        [string]$Path,
+        [string]$Type
+    )
+
+    $fileName = [System.IO.Path]::GetFileNameWithoutExtension($Path)
+    $marker = if ($Type -eq "Nationality") { "nemzet" } else { "irányító" }
+    $markerIndex = $fileName.IndexOf($marker, [System.StringComparison]::OrdinalIgnoreCase)
+    if ($markerIndex -lt 0) {
+        throw "A fájlnév nem tartalmazza a várt kifejezést '$marker': $fileName"
+    }
+
+    $prefix = $fileName.Substring(0, $markerIndex).TrimEnd([char[]]@(' ', '-', '_', '.'))
+    if ([string]::IsNullOrWhiteSpace($prefix)) {
+        throw "Nem olvasható ki előtag a fájlnévből: $fileName"
+    }
+
+    return $prefix
 }
 
 # Function to generate Excel reports
@@ -168,12 +215,12 @@ function New-ExcelReport {
     $summaryRange.Borders.Item([Microsoft.Office.Interop.Excel.XlBordersIndex]::xlEdgeBottom).Weight = [Microsoft.Office.Interop.Excel.XlBorderWeight]::xlMedium
 
     # Auto-fit columns
-    $sheet.Columns.AutoFit()
+    $sheet.Columns.AutoFit() | Out-Null
 
     # Save and release resources
-    $workbook.SaveAs($FilePath)
-    $workbook.Close($false)
-    $excel.Quit()
+    $workbook.SaveAs($FilePath) | Out-Null
+    $workbook.Close($false) | Out-Null
+    $excel.Quit() | Out-Null
     [System.Runtime.Interopservices.Marshal]::ReleaseComObject($sheet) | Out-Null
     [System.Runtime.Interopservices.Marshal]::ReleaseComObject($workbook) | Out-Null
     [System.Runtime.Interopservices.Marshal]::ReleaseComObject($excel) | Out-Null
@@ -185,21 +232,30 @@ function New-ExcelReport {
 
 
 
-# Main Script
-$folderBrowser = New-Object System.Windows.Forms.FolderBrowserDialog
-$folderBrowser.Description = "Válassz egy mappát, ahol a fájlok találhatók:"
-$folderBrowser.ShowNewFolderButton = $false
+function Invoke-NationalityZipStatistics {
+    param (
+        [string[]]$NationalityFiles,
+        [string[]]$ZipFiles,
+        [string]$OutputDirectory,
+        [scriptblock]$ProgressCallback
+    )
 
-if ($folderBrowser.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
-    $selectedPath = $folderBrowser.SelectedPath
-    $pairs = Get-MonthlyFilePairs -Path $selectedPath
+    if (-not (Test-Path -LiteralPath $OutputDirectory -PathType Container)) {
+        throw "A mentési mappa nem található: $OutputDirectory"
+    }
 
-    foreach ($pair in $pairs) {
-        # Generate nationality report
+    $pairs = Get-MonthlyFilePairs -NationalityFiles $NationalityFiles -ZipFiles $ZipFiles
+    $completedPairs = 0
+    $pairPrefixes = [System.Collections.Generic.List[string]]::new()
+    for ($pairIndex = 0; $pairIndex -lt $pairs.Count; $pairIndex++) {
+        $pair = $pairs[$pairIndex]
+        if ($null -ne $ProgressCallback) {
+            & $ProgressCallback $pair.Prefix ($pairIndex + 1) $pairs.Count
+        }
+
         $nationalities = Get-GroupedNationalityData -csvPath $pair.NemzPath
         if (-not $nationalities -or $nationalities.Count -eq 0) {
-            Write-Warning "No valid nationality data found for $($pair.NemzPath). Skipping report generation."
-            continue
+            throw "Nem található érvényes nemzetiségi adat: $($pair.NemzPath)"
         }
 
         $nationalStats = Get-NationalityStats $nationalities
@@ -209,17 +265,17 @@ if ($folderBrowser.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
             "Összesen:"                  = $nationalStats.Kulfold_Osszesen
         }
 
-        New-ExcelReport     -FilePath "$selectedPath\$($pair.Month) - Nemeztiségek.xlsx" `
-                            -SheetName "$($pair.Month) - Nemeztiségek" `
-                            -Headers @("ISO", "Ország", "Darabszám") `
-                            -Data $nationalities `
-                            -Summary $nationalSummary
+        $nationalityReportPath = Join-Path $OutputDirectory "$($pair.Prefix) - Nemzetiségek.xlsx"
+        New-ExcelReport -FilePath $nationalityReportPath `
+            -SheetName "$($pair.Prefix) - Nemzetiségek" `
+            -Headers @("ISO", "Ország", "Darabszám") `
+            -Data $nationalities `
+            -Summary $nationalSummary | Out-Null
 
-        # Generate zip code report
-        $zipCodes = Get-CleanedUpZipCodes -csvPath $pair.IrszPath -DesiredTotal (($nationalities | Where-Object { $_.ISO -eq "HU" }).Darabszám)
+        $desiredTotal = ($nationalities | Where-Object { $_.ISO -eq "HU" }).Darabszám
+        $zipCodes = Get-CleanedUpZipCodes -csvPath $pair.IrszPath -DesiredTotal $desiredTotal
         if (-not $zipCodes -or $zipCodes.Count -eq 0) {
-            Write-Log "No valid zip code data found for $($pair.IrszPath). Skipping report generation." WARNING
-            continue
+            throw "Nem található érvényes irányítószám-adat: $($pair.IrszPath)"
         }
 
         $zipStats = Get-ZipStats $zipCodes
@@ -230,12 +286,46 @@ if ($folderBrowser.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
             "Összesen:"                             = $zipStats.Osszesen
         }
 
-        New-ExcelReport     -FilePath "$selectedPath\$($pair.Month) - Irányítószámok.xlsx" `
-                            -SheetName "$($pair.Month) - Irányítószámok" `
-                            -Headers @("Irányítószám", "Település", "Darabszám") `
-                            -Data $zipCodes `
-                            -Summary $zipSummary
+        $zipReportPath = Join-Path $OutputDirectory "$($pair.Prefix) - Irányítószámok.xlsx"
+        New-ExcelReport -FilePath $zipReportPath `
+            -SheetName "$($pair.Prefix) - Irányítószámok" `
+            -Headers @("Irányítószám", "Település", "Darabszám") `
+            -Data $zipCodes `
+            -Summary $zipSummary | Out-Null
+
+        $completedPairs++
+        $pairPrefixes.Add($pair.Prefix)
     }
-} else {
-    Write-LOG "Nincs mappa kiválasztva." ERROR
+
+    return [PSCustomObject]@{
+        PairCount = $completedPairs
+        Prefixes  = [string[]]$pairPrefixes
+    }
 }
+
+$app = [System.Windows.Application]::Current
+if (-not $app) {
+    $app = [System.Windows.Application]::new()
+    $app.ShutdownMode = 'OnExplicitShutdown'
+    $app.Resources.MergedDictionaries.Add((Get-ThemeResources))
+    $app.Resources.MergedDictionaries.Add((Get-ThemeStyle))
+}
+
+$viewModel = [NationalityZipStatisticViewModel]::new({
+        param($nationalityFiles, $zipFiles, $outputDirectory, $progressCallback)
+        Invoke-NationalityZipStatistics `
+            -NationalityFiles $nationalityFiles `
+            -ZipFiles $zipFiles `
+            -OutputDirectory $outputDirectory `
+            -ProgressCallback $progressCallback
+    })
+$view = [NationalityZipStatisticView]::new($viewModel)
+$frame = [System.Windows.Threading.DispatcherFrame]::new()
+$view.Window.Add_Closed({
+        $frame.Continue = $false
+    }.GetNewClosure())
+$view.Show()
+[System.Windows.Threading.Dispatcher]::PushFrame($frame)
+
+Remove-Variable app, viewModel, view, frame -ErrorAction SilentlyContinue
+[GC]::Collect()
