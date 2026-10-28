@@ -24,23 +24,23 @@ Register-Behavior "SelectAll" {
 
     param($element)
 
-    if ($element -isnot [ListBox]) {
+    if ($element -isnot [System.Windows.Controls.ListBox]) {
         throw "SelectAll requires ListBox, got $($element.GetType().FullName)"
     }
 
-    $listBox = [ListBox]$element
+    $listBox = [System.Windows.Controls.ListBox]$element
 
 
     $listBox.AddHandler(
-        [UIElement]::PreviewKeyDownEvent,
-        [KeyEventHandler]{
+        [System.Windows.UIElement]::PreviewKeyDownEvent,
+        [System.Windows.Input.KeyEventHandler]{
 
             param($sender,$args)
 
 
             if(
-                $args.Key -eq [Key]::A -and
-                [Keyboard]::Modifiers -eq [ModifierKeys]::Control
+                $args.Key -eq                 [System.Windows.Input.Key]::A -and
+                [System.Windows.Input.Keyboard]::Modifiers -eq [System.Windows.Input.ModifierKeys]::Control
             )
             {
                 $sender.SelectAll()

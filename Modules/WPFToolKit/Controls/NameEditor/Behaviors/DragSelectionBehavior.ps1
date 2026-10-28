@@ -26,16 +26,16 @@ Register-Behavior "DragSelection" {
     param($element)
 
 
-    if ($element -isnot [ListBox]) {
+    if ($element -isnot [System.Windows.Controls.ListBox]) {
         throw "DragSelection requires ListBox, got $($element.GetType().FullName)"
     }
 
-    $listBox = [ListBox]$element
+    $listBox = [System.Windows.Controls.ListBox]$element
 
 
     $getItemAtPoint = {
         param(
-            [ListBox]$ListBox,
+            [System.Windows.Controls.ListBox]$ListBox,
             [System.Windows.Point]$Point
         )
 
@@ -43,10 +43,10 @@ Register-Behavior "DragSelection" {
 
         while(
             $visual -and
-            -not ($visual -is [ListBoxItem])
+            -not ($visual -is [System.Windows.Controls.ListBoxItem])
         )
         {
-            $visual = [VisualTreeHelper]::GetParent($visual)
+            $visual = [System.Windows.Media.VisualTreeHelper]::GetParent($visual)
         }
 
         return $visual
@@ -58,15 +58,21 @@ Register-Behavior "DragSelection" {
         Anchor   = -1
     }
 
+    $ctrlClickState = @{
+        IsCtrlClick       = $false
+        ClickedItemWasSelected = $false
+        PreviousSelection = @()
+    }
+
 
     $listBox.AddHandler(
-        [UIElement]::PreviewMouseLeftButtonDownEvent,
-        [MouseButtonEventHandler]{
+        [System.Windows.UIElement]::PreviewMouseLeftButtonDownEvent,
+        [System.Windows.Input.MouseButtonEventHandler]{
 
             param($sender,$mouseEvent)
 
             if(
-                [Keyboard]::Modifiers -ne [ModifierKeys]::None
+                [System.Windows.Input.Keyboard]::Modifiers -ne [System.Windows.Input.ModifierKeys]::None
             )
             {
                 return
@@ -93,11 +99,60 @@ Register-Behavior "DragSelection" {
         $true
     )
 
+    $listBox.AddHandler(
+        [System.Windows.UIElement]::PreviewMouseLeftButtonDownEvent,
+        [System.Windows.Input.MouseButtonEventHandler]{
+            param($sender, $mouseEvent)
+            $ctrlClickState.IsCtrlClick = (
+                ([System.Windows.Input.Keyboard]::Modifiers -band
+                    [System.Windows.Input.ModifierKeys]::Control) -ne 0
+            )
+            $ctrlClickState.ClickedItemWasSelected = $false
+            $ctrlClickState.PreviousSelection = @()
+
+            if (-not $ctrlClickState.IsCtrlClick) {
+                return
+            }
+
+            $item = & $getItemAtPoint $sender $mouseEvent.GetPosition($sender)
+            if ($null -eq $item) {
+                $ctrlClickState.IsCtrlClick = $false
+                return
+            }
+
+            $clickedContent = $item.Content
+            $ctrlClickState.ClickedItemWasSelected =
+                $sender.SelectedItems.Contains($clickedContent)
+            $ctrlClickState.PreviousSelection = @($sender.SelectedItems)
+        }.GetNewClosure(),
+        $true
+    )
+
+    $listBox.AddHandler(
+        [System.Windows.UIElement]::PreviewMouseLeftButtonUpEvent,
+        [System.Windows.Input.MouseButtonEventHandler]{
+            param($sender, $mouseEvent)
+            if (-not $ctrlClickState.IsCtrlClick -or
+                $ctrlClickState.ClickedItemWasSelected) {
+                $ctrlClickState.IsCtrlClick = $false
+                return
+            }
+
+            foreach ($item in $ctrlClickState.PreviousSelection) {
+                if (-not $sender.SelectedItems.Contains($item)) {
+                    [void]$sender.SelectedItems.Add($item)
+                }
+            }
+            $ctrlClickState.IsCtrlClick = $false
+        }.GetNewClosure(),
+        $true
+    )
+
 
 
     $listBox.AddHandler(
-        [UIElement]::PreviewMouseMoveEvent,
-        [MouseEventHandler]{
+        [System.Windows.UIElement]::PreviewMouseMoveEvent,
+        [System.Windows.Input.MouseEventHandler]{
 
             param($sender,$mouseEvent)
 
@@ -110,7 +165,7 @@ Register-Behavior "DragSelection" {
 
             if(
                 $mouseEvent.LeftButton -ne
-                [MouseButtonState]::Pressed
+                [System.Windows.Input.MouseButtonState]::Pressed
             )
             {
                 $state.Dragging = $false
@@ -168,8 +223,8 @@ Register-Behavior "DragSelection" {
 
 
     $listBox.AddHandler(
-        [UIElement]::PreviewMouseLeftButtonUpEvent,
-        [MouseButtonEventHandler]{
+        [System.Windows.UIElement]::PreviewMouseLeftButtonUpEvent,
+        [System.Windows.Input.MouseButtonEventHandler]{
 
             param($sender,$mouseEvent)
 

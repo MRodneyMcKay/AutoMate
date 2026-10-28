@@ -1,0 +1,269 @@
+<!--This file is part of AutoMate.
+
+    AutoMate is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program. If not, see <https://www.gnu.org/licenses/>.
+-->
+
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:toolkit="clr-namespace:WPFToolkit.Behaviors;assembly=WPFToolKit"
+        Title="Nemzetiségi és irányítószám-statisztika"
+        Height="650"
+        Width="1000"
+        MinHeight="540"
+        MinWidth="760"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="CanResize"
+        FontFamily="Segoe UI"
+        FontSize="14"
+        Background="{DynamicResource BackgroundBrush}">
+    <Grid Margin="18">
+        <Grid.Resources>
+            <Style x:Key="FileListItemStyle"
+                   TargetType="ListBoxItem">
+                <Setter Property="HorizontalContentAlignment"
+                        Value="Stretch"/>
+                <Setter Property="VerticalContentAlignment"
+                        Value="Center"/>
+                <Setter Property="Padding"
+                        Value="5,3"/>
+                <Setter Property="Background"
+                        Value="Transparent"/>
+                <Setter Property="BorderThickness"
+                        Value="0"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ListBoxItem">
+                            <Border x:Name="ItemBorder"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    Padding="{TemplateBinding Padding}"
+                                    SnapsToDevicePixels="True">
+                                <ContentPresenter/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsMouseOver"
+                                                   Value="True"/>
+                                        <Condition Property="IsSelected"
+                                                   Value="False"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter TargetName="ItemBorder"
+                                            Property="Background"
+                                            Value="{DynamicResource AccentBrush}"/>
+                                </MultiTrigger>
+                                <Trigger Property="IsSelected"
+                                         Value="True">
+                                    <Setter TargetName="ItemBorder"
+                                            Property="Background"
+                                            Value="{DynamicResource AccentHoverBrush}"/>
+                                    <Setter Property="Foreground"
+                                            Value="{DynamicResource AccentForegroundBrush}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </Grid.Resources>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Border Grid.Row="0"
+                Style="{DynamicResource CardBorder}"
+                Margin="0,0,0,12">
+            <StackPanel>
+                <TextBlock Text="Nemzetiségi és irányítószám-statisztika"
+                           FontSize="24"
+                           FontWeight="Bold"
+                           Margin="0,0,0,6"/>
+                <TextBlock Text="Válassza ki vagy húzza be a nemzetiségi (nemzet) és irányítószám (irányító) CSV-fájlokat."
+                           TextWrapping="Wrap"
+                           Foreground="{DynamicResource MutedBrush}"/>
+            </StackPanel>
+        </Border>
+        <Grid Grid.Row="1"
+              Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Border Grid.Column="0"
+                    x:Name="NationalityPane"
+                    AllowDrop="True"
+                    Style="{DynamicResource CardBorder}"
+                    Margin="0,0,6,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="Nemzetiségi fájlok"
+                               Style="{DynamicResource SectionHeader}"
+                               Margin="0,0,0,8"/>
+                    <ListBox x:Name="NationalityFileList"
+                             Grid.Row="1"
+                             ItemsSource="{Binding NationalityFiles}"
+                             SelectionMode="Extended"
+                             HorizontalContentAlignment="Stretch"
+                             ItemContainerStyle="{StaticResource FileListItemStyle}"
+                             Background="{DynamicResource SurfaceBrush}"
+                             BorderBrush="{DynamicResource BorderBrush}"
+                             Foreground="{DynamicResource TextBrush}"
+                             toolkit:BehaviorBridge.Behavior="DragSelection,SelectAll,ClickEmptyListSpaceCancel"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListBox.InputBindings>
+                            <KeyBinding Key="Delete"
+                                        Command="{Binding DeleteSelectedFilesCommand}"/>
+                        </ListBox.InputBindings>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}"
+                                           TextWrapping="Wrap"
+                                           ToolTip="{Binding}"/>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <Grid Grid.Row="2"
+                          Margin="0,10,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Button x:Name="DeleteNationalityFilesButton"
+                                Content="Törlés"
+                                Width="100"
+                                Command="{Binding DeleteSelectedFilesCommand}"
+                                CommandParameter="{Binding}"/>
+                        <Button x:Name="BrowseNationalityFilesButton"
+                                Grid.Column="2"
+                                Content="Tallózás..."
+                                Width="120"
+                                Command="{Binding BrowseNationalityFilesCommand}"
+                                CommandParameter="{Binding}"/>
+                    </Grid>
+                </Grid>
+            </Border>
+            <Border Grid.Column="1"
+                    x:Name="ZipPane"
+                    AllowDrop="True"
+                    Style="{DynamicResource CardBorder}"
+                    Margin="6,0,0,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="Irányítószám-fájlok"
+                               Style="{DynamicResource SectionHeader}"
+                               Margin="0,0,0,8"/>
+                    <ListBox x:Name="ZipFileList"
+                             Grid.Row="1"
+                             ItemsSource="{Binding ZipFiles}"
+                             SelectionMode="Extended"
+                             HorizontalContentAlignment="Stretch"
+                             ItemContainerStyle="{StaticResource FileListItemStyle}"
+                             Background="{DynamicResource SurfaceBrush}"
+                             BorderBrush="{DynamicResource BorderBrush}"
+                             Foreground="{DynamicResource TextBrush}"
+                             toolkit:BehaviorBridge.Behavior="DragSelection,SelectAll,ClickEmptyListSpaceCancel"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListBox.InputBindings>
+                            <KeyBinding Key="Delete"
+                                        Command="{Binding DeleteSelectedFilesCommand}"/>
+                        </ListBox.InputBindings>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}"
+                                           TextWrapping="Wrap"
+                                           ToolTip="{Binding}"/>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <Grid Grid.Row="2"
+                          Margin="0,10,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Button x:Name="DeleteZipFilesButton"
+                                Content="Törlés"
+                                Width="100"
+                                Command="{Binding DeleteSelectedFilesCommand}"
+                                CommandParameter="{Binding}"/>
+                        <Button x:Name="BrowseZipFilesButton"
+                                Grid.Column="2"
+                                Content="Tallózás..."
+                                Width="120"
+                                Command="{Binding BrowseZipFilesCommand}"
+                                CommandParameter="{Binding}"/>
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
+        <Grid Grid.Row="2"
+              Margin="0,4,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Button x:Name="CalculateStatisticsButton"
+                        Grid.Column="0"
+                        Content="Statisztika számítása"
+                        Style="{DynamicResource PrimaryButton}"
+                        MinWidth="190"
+                        Command="{Binding CalculateStatisticsCommand}"
+                        CommandParameter="{Binding}"/>
+                <TextBlock Grid.Column="1"
+                           Text="Mentési mappa:"
+                           VerticalAlignment="Center"
+                           Margin="18,0,8,0"/>
+                <TextBox Grid.Column="2"
+                         IsReadOnly="True"
+                         IsHitTestVisible="False"
+                         VerticalContentAlignment="Center"
+                         Text="{Binding OutputDirectory.Value}"
+                         Margin="0,0,8,0"/>
+                <Button x:Name="BrowseOutputDirectoryButton"
+                        Grid.Column="3"
+                        Content="Tallózás..."
+                        Width="110"
+                        Command="{Binding BrowseOutputDirectoryCommand}"
+                        CommandParameter="{Binding}"/>
+            </Grid>
+            <Border Grid.Row="1"
+                    Style="{DynamicResource CardBorder}"
+                    Margin="0,10,0,0"
+                    Padding="10,7">
+                <TextBlock x:Name="Status"
+                           Text="{Binding Status.Value}"
+                           TextWrapping="Wrap"/>
+            </Border>
+        </Grid>
+    </Grid>
+</Window>
